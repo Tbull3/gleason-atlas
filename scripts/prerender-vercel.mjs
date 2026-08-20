@@ -1,27 +1,70 @@
 #!/usr/bin/env node
 /**
- * Snapshot Nitro SSR HTML into `.vercel/output/static` so Vercel can serve
- * the atlas when the `__server` function is not attached.
+ * Snapshot Nitro SSR HTML into the Vercel static folder (and a sibling `dist/`
+ * copy) so the atlas is served even if Vercel collects `.vercel/output` before
+ * a later npm script can run.
  */
 import {
+  cpSync,
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const cwd = process.cwd();
-const candidates = [
-  join(cwd, ".vercel/output"),
-  "/vercel/output",
-];
-const outputDir = candidates.find((dir) => existsSync(join(dir, "config.json")));
+const required = process.env.PRERENDER_REQUIRED === "1";
+const distDir = join(cwd, "dist");
+
+function listDir(dir) {
+  try {
+    return readdirSync(dir).join(",");
+  } catch {
+    return "(unreadable)";
+  }
+}
+
+function findOutputDir() {
+  const candidates = [
+    join(cwd, ".vercel/output"),
+    "/vercel/output",
+    join(cwd, ".output"),
+  ];
+  for (const dir of candidates) {
+    if (
+      existsSync(join(dir, "config.json")) ||
+      existsSync(join(dir, "functions/__server.func/index.mjs"))
+    ) {
+      return dir;
+    }
+  }
+  return null;
+}
+
+function copyStaticToDist(staticDir) {
+  if (!existsSync(staticDir)) return;
+  mkdirSync(distDir, { recursive: true });
+  cpSync(staticDir, distDir, { recursive: true });
+  console.info("[prerender] copied", staticDir, "→ dist");
+}
+
+const outputDir = findOutputDir();
 if (!outputDir) {
+  if (existsSync(join(distDir, "index.html"))) {
+    console.info("[prerender] BOA gone — dist/index.html already present");
+    process.exit(0);
+  }
   console.warn("[prerender] no Vercel output — skipping");
-  console.warn("[prerender] cwd=", cwd, "entries=", readdirSync(cwd).join(","));
+  console.warn("[prerender] cwd=", cwd, "entries=", listDir(cwd));
+  console.warn("[prerender] .vercel=", listDir(join(cwd, ".vercel")));
+  console.warn("[prerender] /vercel=", listDir("/vercel"));
+  if (required) {
+    console.error("[prerender] required, but no output dir and no dist/index.html");
+    process.exit(1);
+  }
   process.exit(0);
 }
 
@@ -31,18 +74,21 @@ const configPath = join(outputDir, "config.json");
 console.info("[prerender] using", outputDir);
 
 if (!existsSync(handlerPath)) {
+  copyStaticToDist(staticDir);
   console.error("[prerender] missing handler", handlerPath);
-  process.exit(1);
+  process.exit(required ? 1 : 0);
 }
 
 const mod = await import(pathToFileURL(handlerPath).href);
 const fetchFn = mod.default?.fetch;
 if (typeof fetchFn !== "function") {
+  copyStaticToDist(staticDir);
   console.error("[prerender] Nitro handler has no fetch export");
   process.exit(1);
 }
 
 const context = { waitUntil() {} };
+let wrote = 0;
 for (const [path, outfile] of [
   ["/", "index.html"],
   ["/login", "login/index.html"],
@@ -56,6 +102,13 @@ for (const [path, outfile] of [
   mkdirSync(dirname(dest), { recursive: true });
   writeFileSync(dest, await response.text());
   console.info(`[prerender] ${path} → ${outfile}`);
+  wrote += 1;
+}
+
+if (wrote === 0) {
+  console.error("[prerender] wrote 0 pages");
+  copyStaticToDist(staticDir);
+  process.exit(1);
 }
 
 if (existsSync(configPath)) {
@@ -81,3 +134,13 @@ if (existsSync(configPath)) {
   writeFileSync(configPath, JSON.stringify(config, null, 2));
   console.info("[prerender] patched config.json");
 }
+
+copyStaticToDist(staticDir);
+if (!existsSync(join(distDir, "index.html"))) {
+  console.error("[prerender] dist/index.html missing after copy");
+  process.exit(1);
+}
+console.info("[prerender] dist/index.html ready");
+// The Nitro handler may start PGLite in the background; don't let that
+// uncaught bootstrap error fail a successful prerender.
+process.exit(0);

@@ -1,6 +1,13 @@
 import type { Plugin } from "vite";
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { defineConfig } from "vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
@@ -20,6 +27,60 @@ function copyPgliteWasmAssets() {
   for (const file of ["pglite.data", "pglite.wasm", "initdb.wasm"] as const) {
     copyFileSync(join(src, file), join(dest, file));
   }
+}
+
+/**
+ * Vercel’s tanstack-start builder deploys Nitro static files but often drops
+ * the `__server` function, so `/` 404s. Snapshot SSR HTML into `static/` and
+ * add an SPA fallback so the atlas is reachable without the function.
+ */
+async function writeVercelPrerender() {
+  const outputDir = join(process.cwd(), ".vercel/output");
+  const staticDir = join(outputDir, "static");
+  const handlerPath = join(outputDir, "functions/__server.func/index.mjs");
+  const configPath = join(outputDir, "config.json");
+  if (!existsSync(handlerPath) || !existsSync(configPath)) return;
+
+  const mod = (await import(pathToFileURL(handlerPath).href)) as {
+    default?: { fetch?: (request: Request, context?: unknown) => Promise<Response> };
+  };
+  const fetchFn = mod.default?.fetch;
+  if (typeof fetchFn !== "function") return;
+
+  const context = { waitUntil() {} };
+  for (const [path, outfile] of [
+    ["/", "index.html"],
+    ["/login", "login/index.html"],
+  ] as const) {
+    const response = await fetchFn(new Request(`http://127.0.0.1${path}`), context);
+    if (!response.ok) {
+      console.warn(`[vercel] prerender ${path} → ${response.status}`);
+      continue;
+    }
+    const dest = join(staticDir, outfile);
+    mkdirSync(dirname(dest), { recursive: true });
+    writeFileSync(dest, await response.text());
+    console.info(`[vercel] prerendered ${path} → ${outfile}`);
+  }
+
+  const config = JSON.parse(readFileSync(configPath, "utf8")) as {
+    routes?: Array<Record<string, unknown>>;
+  };
+  const routes = Array.isArray(config.routes) ? [...config.routes] : [];
+  for (const route of routes) {
+    if (route.headers && !route.dest && !route.handle) {
+      route.continue = true;
+    }
+  }
+  const kept = routes.filter(
+    (route) => !(route.src === "/(.*)" && route.dest === "/__server"),
+  );
+  kept.push(
+    { src: "/api/(.*)", dest: "/__server" },
+    { src: "/(.*)", dest: "/index.html" },
+  );
+  config.routes = kept;
+  writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
 /**
@@ -170,8 +231,9 @@ export default defineConfig(({ command, isPreview }) => ({
             // false, so removing this silently unwires /?install=1 on deploys.
             serverDir: "./server",
             hooks: {
-              compiled() {
+              async compiled() {
                 copyPgliteWasmAssets();
+                await writeVercelPrerender();
               },
             },
           }),

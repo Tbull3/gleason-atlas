@@ -1,0 +1,185 @@
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  --font-sans: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Newsreader", "Iowan Old Style", Palatino, serif;
+
+  --color-background: #0e0d0b;
+  --color-foreground: #ece7dc;
+  --color-surface: #161512;
+  --color-surface-2: #1c1a16;
+  --color-muted: #9a9488;
+  --color-muted-foreground: #9a9488;
+  --color-border: #2c2924;
+  --color-primary: #d8d2c6;
+  --color-primary-foreground: #0e0d0b;
+  --color-accent: #b9c2c8;
+  --color-accent-foreground: #0e0d0b;
+  --color-card: #161512;
+  --color-card-foreground: #ece7dc;
+  --color-ring: #b9c2c8;
+  --color-input: #2c2924;
+  --color-destructive: #c45c4a;
+  --color-popover: #1c1a16;
+  --color-popover-foreground: #ece7dc;
+  --color-ocean: #10161a;
+  --color-nodata: #2a3238;
+  --color-ice: #3d4a52;
+  --color-graticule: #5a656c;
+  --color-map-ring: #8a9296;
+
+  --choropleth-ramp: linear-gradient(
+    to right,
+    #17343c,
+    #1f5c64,
+    #3d8f88,
+    #8bbf9e,
+    #d4d0b0,
+    #efe8d6
+  );
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius: 8px;
+
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100dvh;
+    background: var(--color-background);
+    color: var(--color-foreground);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    --choropleth-ramp: linear-gradient(
+      to right,
+      #17343c,
+      #1f5c64,
+      #3d8f88,
+      #8bbf9e,
+      #d4d0b0,
+      #efe8d6
+    );
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+.country-path {
+  cursor: pointer;
+  vector-effect: non-scaling-stroke;
+  stroke: color-mix(in oklab, var(--color-foreground) 16%, transparent);
+  stroke-width: 0.6px;
+  transition:
+    fill 400ms var(--ease-smooth-out),
+    stroke 150ms var(--ease-smooth-out),
+    stroke-width 150ms var(--ease-smooth-out),
+    opacity 220ms var(--ease-smooth-out);
+}
+
+.country-path[data-active="true"] {
+  stroke: var(--color-foreground);
+  stroke-width: 1.6px;
+}
+
+.country-path[data-hovered="true"]:not([data-active="true"]) {
+  stroke: var(--color-foreground);
+  stroke-width: 1.15px;
+}
+
+.country-path[data-dimmed="true"] {
+  opacity: 0.38;
+}
+
+.map-graticule {
+  vector-effect: non-scaling-stroke;
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-graticule) 55%, transparent);
+  stroke-width: 0.55px;
+}
+
+.map-equator {
+  vector-effect: non-scaling-stroke;
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-accent) 42%, var(--color-graticule));
+  stroke-width: 1px;
+}
+
+.map-sphere {
+  vector-effect: non-scaling-stroke;
+  fill: var(--color-ocean);
+  stroke: var(--color-map-ring);
+  stroke-width: 1.5px;
+}
+
+.map-outer-ring {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-map-ring) 55%, transparent);
+  stroke-width: 1px;
+}
+
+.map-ring {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-map-ring) 70%, transparent);
+  stroke-width: 1px;
+}
+
+.map-lat-label {
+  fill: color-mix(in oklab, var(--color-foreground) 55%, transparent);
+  font-size: 11px;
+  font-family: var(--font-sans);
+}
+
+.rim-tick {
+  stroke: color-mix(in oklab, var(--color-map-ring) 80%, transparent);
+  stroke-width: 1px;
+}
+
+.rim-tick-major {
+  stroke: var(--color-map-ring);
+  stroke-width: 1.2px;
+}
+
+.rim-label {
+  fill: color-mix(in oklab, var(--color-foreground) 48%, transparent);
+  font-size: 10px;
+  font-family: var(--font-sans);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .country-path {
+    transition: none;
+  }
+}

@@ -104,6 +104,13 @@ for (const [path, outfile] of [
   wrote += 1;
 }
 
+if (wrote > 0 && existsSync(join(staticDir, "index.html"))) {
+  const loginDest = join(staticDir, "login/index.html");
+  mkdirSync(dirname(loginDest), { recursive: true });
+  writeFileSync(loginDest, readFileSync(join(staticDir, "index.html")));
+  console.info("[prerender] /login → login/index.html (atlas)");
+}
+
 if (wrote === 0) {
   console.error("[prerender] wrote 0 pages");
   copyStaticToDist(staticDir);

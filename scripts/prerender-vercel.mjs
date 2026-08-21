@@ -91,7 +91,6 @@ const context = { waitUntil() {} };
 let wrote = 0;
 for (const [path, outfile] of [
   ["/", "index.html"],
-  ["/login", "login/index.html"],
 ]) {
   const response = await fetchFn(new Request(`http://127.0.0.1${path}`), context);
   if (!response.ok) {

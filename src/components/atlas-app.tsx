@@ -3,7 +3,6 @@ import { GleasonMap } from "@/components/gleason-map";
 import { CountryPanel } from "@/components/country-panel";
 import { MetricSwitcher } from "@/components/metric-switcher";
 import { CountrySearch } from "@/components/country-search";
-import { AuthSlot } from "@/components/auth-slot";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,7 +38,6 @@ export function AtlasApp() {
             <CountrySearch />
           </div>
           <AboutDialog />
-          <AuthSlot />
         </div>
         <div className="min-w-0 w-full">
           <MetricSwitcher />

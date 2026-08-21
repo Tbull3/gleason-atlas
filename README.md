@@ -2,7 +2,9 @@
 
 A polar choropleth of the world on Alexander Gleason’s 1892 azimuthal equidistant projection — North Pole at the centre, Antarctica as the outer ice ring.
 
-Switch metrics (HDI, life expectancy, GDP, population, CO₂, density, area), hover for a reading, click a country for the full sheet, pan/zoom/rotate the disc.
+Switch metrics (HDI, life expectancy, GDP, population, CO₂, density, area), hover for a reading, click a country for the full sheet, pan/zoom/rotate the disc, and switch viewing planes (overhead, pole, rim, transverse).
+
+The atlas is open to browse — no account required.
 
 Figures are illustrative 2024 estimates compiled for comparison, not official statistics.
 
@@ -30,6 +32,4 @@ npm run build
 
 ## Deploy
 
-TanStack Start + Nitro (`preset: "vercel"`). The build writes Vercel’s Build Output API and prerenders `/` and `/login` into static HTML so the map is served even if the serverless function is not attached.
-
-Optional: set `DATABASE_URL` (Neon Postgres) for persistent auth. Without it the map is fully usable; Google / X sign-in needs those broker credentials on the host.
+TanStack Start + Nitro (`preset: "vercel"`). The build writes Vercel’s Build Output API and prerenders `/` into static HTML so the map is served even if the serverless function is not attached.

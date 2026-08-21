@@ -42,7 +42,16 @@ import { ViewSwitcher } from "@/components/view-switcher";
 import { DiskRim } from "@/components/disk-rim";
 import { GleasonMarks } from "@/components/gleason-marks";
 import { DistanceHud } from "@/components/distance-hud";
+import { CelestialBodies } from "@/components/celestial-bodies";
+import { CelestialHud } from "@/components/celestial-hud";
 import { invertLonLat, projectMeasure, discMeasure, formatCount, type MeasurePoint } from "@/lib/distance";
+import {
+  CENTRAL_TZ,
+  formatZoneAbbrev,
+  skyAt,
+  viewerTimeZone,
+  zoneMeridian,
+} from "@/lib/astro";
 
 type TooltipState = {
   x: number;
@@ -100,6 +109,7 @@ export function GleasonMap() {
   const [tooltip, setTooltip] = useState<TooltipState>(null);
   const [measureA, setMeasureA] = useState<MeasurePoint | null>(null);
   const [measureB, setMeasureB] = useState<MeasurePoint | null>(null);
+  const [now, setNow] = useState<Date | null>(null);
   const measureARef = useRef<MeasurePoint | null>(null);
   const measureBRef = useRef<MeasurePoint | null>(null);
 
@@ -116,6 +126,13 @@ export function GleasonMap() {
   const measureMode = useAtlas((s) => s.measureMode);
   const measureModeRef = useRef(measureMode);
   measureModeRef.current = measureMode;
+  const clockZone = useAtlas((s) => s.clockZone);
+
+  useEffect(() => {
+    setNow(new Date());
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   viewModeRef.current = viewMode;
   if (!dragRef.current) {
@@ -542,6 +559,10 @@ export function GleasonMap() {
   const drawnB = measureB ? projectMeasure(projection, measureB) : null;
   const drawnMeasure =
     drawnA && drawnB ? discMeasure(drawnA, drawnB) : null;
+  const sky = useMemo(() => (now ? skyAt(now) : null), [now]);
+  const timeZone = clockZone === "central" ? CENTRAL_TZ : viewerTimeZone();
+  const civilMeridian = now ? zoneMeridian(now, timeZone) : 0;
+  const zoneAbbrev = now ? formatZoneAbbrev(now, timeZone) : "";
 
   return (
     <div
@@ -645,6 +666,14 @@ export function GleasonMap() {
                       onLeave={onLeave}
                       onSelect={onSelect}
                     />
+                    {sky && (
+                      <CelestialBodies
+                        projection={projection}
+                        sky={sky}
+                        zoneMeridian={civilMeridian}
+                        zoneAbbrev={zoneAbbrev}
+                      />
+                    )}
                     {measureMode && <GleasonMarks projection={projection} />}
                     {drawnA && (
                       <circle
@@ -739,6 +768,7 @@ export function GleasonMap() {
         </div>
       </div>
       <ViewSwitcher />
+      <CelestialHud sky={sky} now={now} />
       {measureMode && (
         <DistanceHud
           a={drawnA}

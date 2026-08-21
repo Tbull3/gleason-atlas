@@ -29,6 +29,10 @@
   --color-ice: #3d4a52;
   --color-graticule: #5a656c;
   --color-map-ring: #8a9296;
+  --color-sun: #efe6c6;
+  --color-sun-core: #f7f1dc;
+  --color-moon: #d7dce2;
+  --color-moon-shadow: #1a2228;
 
   --choropleth-ramp: linear-gradient(
     to right,
@@ -480,4 +484,79 @@
 .map-viewport[data-measure="true"] .country-path {
   cursor: crosshair;
 }
+
+.map-sun-arm {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-sun) 55%, transparent);
+  stroke-width: 1.1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-civil-arm {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-accent) 50%, transparent);
+  stroke-width: 1px;
+  stroke-dasharray: 4 5;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-sun {
+  fill: var(--color-sun-core);
+  stroke: var(--color-sun);
+  stroke-width: 1px;
+}
+
+.map-sun-halo {
+  fill: color-mix(in oklab, var(--color-sun) 28%, transparent);
+}
+
+.map-sun-glow {
+  fill: color-mix(in oklab, var(--color-sun) 12%, transparent);
+}
+
+.map-sun-caption,
+.map-sun-label {
+  fill: var(--color-sun);
+  font-size: 9px;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  paint-order: stroke fill;
+  stroke: var(--color-ocean);
+  stroke-width: 3px;
+}
+
+.map-civil-label {
+  fill: color-mix(in oklab, var(--color-accent) 85%, var(--color-foreground));
+  font-size: 9px;
+  font-family: var(--font-sans);
+  paint-order: stroke fill;
+  stroke: var(--color-ocean);
+  stroke-width: 3px;
+}
+
+.map-moon-dark {
+  fill: var(--color-moon-shadow);
+}
+
+.map-moon-lit {
+  fill: var(--color-moon);
+}
+
+.map-moon-edge {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-moon) 70%, transparent);
+  stroke-width: 0.8px;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-moon-caption {
+  fill: var(--color-moon);
+  font-size: 9px;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  paint-order: stroke fill;
+  stroke: var(--color-ocean);
+  stroke-width: 3px;
+}
+
 

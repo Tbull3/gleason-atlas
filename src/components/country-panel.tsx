@@ -209,7 +209,8 @@ function EmptyPanel() {
           Antarctic ice ring at the rim. Hover for a reading, click a country
           for the full sheet, then switch the metric above. The ruler shows
           Gleason’s 1892 geographical-mile scale and the four cardinal meridians
-          at the ice.
+          at the ice. The sun and moon mark where each body is overhead right
+          now; the clock follows your timezone, or US Central.
         </p>
       </div>
       <Separator />

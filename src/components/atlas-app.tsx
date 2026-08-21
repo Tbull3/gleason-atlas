@@ -102,6 +102,14 @@ function AboutDialog() {
             rotate buttons and arrow keys.
           </p>
           <p>
+            The sun and moon sit at their true overhead points for this
+            instant — the same subsolar and sublunar positions Gleason’s
+            time arms were meant to track. The solid arm is solar noon; the
+            dashed arm is your civil meridian (local time, or US Central).
+            The clock follows the viewer’s timezone, with Central as a
+            pin.
+          </p>
+          <p>
             Countries are colored by the selected metric. Figures are
             illustrative 2024 estimates compiled for this atlas — useful for
             comparison, not official statistics. Hover for a reading, click

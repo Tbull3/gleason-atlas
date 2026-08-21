@@ -15,6 +15,13 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { useMemo } from "react";
+import { createGleasonProjection } from "@/lib/geo";
+import {
+  countryFromPole,
+  formatCount,
+  formatStatuteMiles,
+} from "@/lib/distance";
 
 export function CountryPanel() {
   const isDesktop = useMediaQuery("(min-width: 1024px)", true);
@@ -84,6 +91,7 @@ function PanelBody() {
               Capital {country.capital}
             </p>
           )}
+          <FromPoleLine countryKey={country.key} />
         </div>
         <Button
           type="button"
@@ -199,7 +207,9 @@ function EmptyPanel() {
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           Distances from the North Pole are true. Continents stretch toward the
           Antarctic ice ring at the rim. Hover for a reading, click a country
-          for the full sheet, then switch the metric above.
+          for the full sheet, then switch the metric above. The ruler shows
+          Gleason’s 1892 geographical-mile scale and the four cardinal meridians
+          at the ice.
         </p>
       </div>
       <Separator />
@@ -237,5 +247,24 @@ function EmptyPanel() {
         official statistics.
       </p>
     </div>
+  );
+}
+
+function FromPoleLine({ countryKey }: { countryKey: string }) {
+  const fromPole = useMemo(() => {
+    const projection = createGleasonProjection(0);
+    return countryFromPole(countryKey, projection);
+  }, [countryKey]);
+
+  if (!fromPole) return null;
+
+  return (
+    <p className="mt-1.5 text-xs text-muted-foreground">
+      {formatCount(fromPole.geoMiles)} geo. mi from the pole
+      <span className="text-muted-foreground/80">
+        {" "}
+        · {formatStatuteMiles(fromPole.geoMiles)}
+      </span>
+    </p>
   );
 }

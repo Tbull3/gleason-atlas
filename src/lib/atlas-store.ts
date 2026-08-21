@@ -15,6 +15,7 @@ type AtlasState = {
   turn: number;
   searchQuery: string;
   focusToken: number;
+  measureMode: boolean;
   setMetric: (metric: MetricId) => void;
   setSelectedKey: (selectedKey: string | null) => void;
   setHoveredKey: (hoveredKey: string | null) => void;
@@ -23,6 +24,7 @@ type AtlasState = {
   setTurn: (turn: number | ((current: number) => number)) => void;
   setSearchQuery: (searchQuery: string) => void;
   focusCountry: (key: string) => void;
+  setMeasureMode: (measureMode: boolean | ((current: boolean) => boolean)) => void;
 };
 
 export const useAtlas = create<AtlasState>((set) => ({
@@ -34,6 +36,7 @@ export const useAtlas = create<AtlasState>((set) => ({
   turn: 0,
   searchQuery: "",
   focusToken: 0,
+  measureMode: false,
   setMetric: (metric) => set({ metric }),
   setSelectedKey: (selectedKey) => set({ selectedKey }),
   setHoveredKey: (hoveredKey) => set({ hoveredKey }),
@@ -43,12 +46,23 @@ export const useAtlas = create<AtlasState>((set) => ({
         typeof rotation === "function" ? rotation(s.rotation) : rotation,
       ),
     })),
-  setViewMode: (viewMode) => set({ viewMode }),
+  setViewMode: (viewMode) =>
+    set((s) => ({
+      viewMode,
+      measureMode: viewMode === "plan" ? s.measureMode : false,
+    })),
   setTurn: (turn) =>
     set((s) => ({
       turn: wrapDeg(typeof turn === "function" ? turn(s.turn) : turn),
     })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+  setMeasureMode: (measureMode) =>
+    set((s) => ({
+      measureMode:
+        typeof measureMode === "function"
+          ? measureMode(s.measureMode)
+          : measureMode,
+    })),
   focusCountry: (key) =>
     set((s) => ({
       selectedKey: key,

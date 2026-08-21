@@ -86,6 +86,14 @@ function AboutDialog() {
             The equator is the circle halfway to the rim.
           </p>
           <p>
+            The 1892 sheet printed a scale of geographical miles (one minute
+            of arc) and statute miles, with June and December solstice
+            diagrams in the lower corners. Distance mode shows that scale,
+            the four cardinal meridians — Greenwich, 90°E, 180°, and 90°W —
+            meeting the ice at the four corners of the disc, and lets you
+            click two points to measure along the map.
+          </p>
+          <p>
             Four viewing planes: overhead looks down the polar axis; from
             the pole stands at the centre and looks out to the ice; from
             the rim stands at the outer ice and looks in toward the pole;

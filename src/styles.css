@@ -388,3 +388,96 @@
     transition: none;
   }
 }
+
+.map-cardinal-meridian {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-accent) 70%, var(--color-foreground));
+  stroke-width: 1.35px;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-mile-ring {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-accent) 28%, transparent);
+  stroke-width: 0.7px;
+  stroke-dasharray: 3 5;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-mile-label {
+  fill: color-mix(in oklab, var(--color-foreground) 78%, transparent);
+  font-size: 9px;
+  font-family: var(--font-sans);
+  paint-order: stroke fill;
+  stroke: var(--color-ocean);
+  stroke-width: 3px;
+}
+
+.map-corner-mark {
+  fill: var(--color-foreground);
+  stroke: var(--color-background);
+  stroke-width: 1px;
+}
+
+.map-corner-tick {
+  fill: none;
+  stroke: var(--color-foreground);
+  stroke-width: 1.4px;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-corner-label {
+  fill: color-mix(in oklab, var(--color-foreground) 82%, transparent);
+  font-size: 10px;
+  font-family: var(--font-sans);
+  paint-order: stroke fill;
+  stroke: var(--color-ocean);
+  stroke-width: 3px;
+}
+
+.map-s-label {
+  fill: color-mix(in oklab, var(--color-muted) 90%, transparent);
+  font-size: 9px;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  paint-order: stroke fill;
+  stroke: var(--color-ocean);
+  stroke-width: 3px;
+}
+
+.map-n-label {
+  fill: var(--color-foreground);
+  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.map-n-dot {
+  fill: var(--color-foreground);
+}
+
+.map-measure-line {
+  stroke: var(--color-foreground);
+  stroke-width: 1.6px;
+  stroke-dasharray: 5 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-measure-point {
+  fill: var(--color-background);
+  stroke: var(--color-foreground);
+  stroke-width: 1.6px;
+}
+
+.map-measure-label {
+  fill: var(--color-foreground);
+  font-size: 11px;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.map-viewport[data-measure="true"] .country-path {
+  cursor: crosshair;
+}
+

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Minus, Plus, RotateCcw, RotateCw, Maximize2 } from "lucide-react";
+import { Minus, Plus, RotateCcw, RotateCw, Maximize2, Ruler } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -18,6 +18,9 @@ export function MapControls({ onZoomIn, onZoomOut, onReset }: Props) {
   const viewMode = useAtlas((s) => s.viewMode);
   const setRotation = useAtlas((s) => s.setRotation);
   const setTurn = useAtlas((s) => s.setTurn);
+  const measureMode = useAtlas((s) => s.measureMode);
+  const setMeasureMode = useAtlas((s) => s.setMeasureMode);
+  const setViewMode = useAtlas((s) => s.setViewMode);
   const spatial = viewMode !== "plan";
 
   function rotateWest() {
@@ -42,6 +45,19 @@ export function MapControls({ onZoomIn, onZoomOut, onReset }: Props) {
         <Maximize2 />
       </Control>
       <Control
+        label={measureMode ? "Hide distance" : "Show distance"}
+        onClick={() => {
+          setMeasureMode((on) => {
+            const next = !on;
+            if (next) setViewMode("plan");
+            return next;
+          });
+        }}
+        pressed={measureMode}
+      >
+        <Ruler />
+      </Control>
+      <Control
         label={spatial ? "Turn west" : "Rotate west"}
         onClick={rotateWest}
       >
@@ -61,19 +77,22 @@ function Control({
   label,
   onClick,
   children,
+  pressed,
 }: {
   label: string;
   onClick: () => void;
   children: ReactNode;
+  pressed?: boolean;
 }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
           type="button"
-          variant="secondary"
+          variant={pressed ? "default" : "secondary"}
           size="icon"
           aria-label={label}
+          aria-pressed={pressed}
           onClick={onClick}
           className="size-10 sm:size-8"
         >

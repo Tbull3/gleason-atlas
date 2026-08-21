@@ -210,7 +210,8 @@ function EmptyPanel() {
           for the full sheet, then switch the metric above. The ruler shows
           Gleason’s 1892 geographical-mile scale and the four cardinal meridians
           at the ice. The sun and moon mark where each body is overhead right
-          now; the clock follows your timezone, or US Central.
+          now — 33 miles across, 3,000 miles above the disc. The clock follows
+          your timezone, or US Central.
         </p>
       </div>
       <Separator />

@@ -118,3 +118,18 @@ test("illuminated fraction is (1 - cos elongation) / 2", () => {
   assert.ok(Math.abs((1 - Math.cos(Math.PI)) / 2 - 1) < 1e-10);
   assert.ok(Math.abs((1 - Math.cos(Math.PI / 2)) / 2 - 0.5) < 1e-10);
 });
+
+test("sun and moon are 33 statute miles across, 3,000 miles up on the Gleason scale", () => {
+  const STATUTE_PER_GEO = 6080 / 5280;
+  const DISC_GEO_MILES = 10800;
+  const diameterGeo = 33 / STATUTE_PER_GEO;
+  const altitudeGeo = 3000 / STATUTE_PER_GEO;
+  assert.ok(Math.abs(diameterGeo - 28.66) < 0.02);
+  assert.ok(Math.abs(altitudeGeo - 2605.26) < 0.05);
+  const heightRatio = altitudeGeo / DISC_GEO_MILES;
+  assert.ok(heightRatio > 0.23 && heightRatio < 0.25);
+  const MAP_RADIUS = (1000 - 42 * 2) / 2;
+  const bodySvg = (diameterGeo / DISC_GEO_MILES) * MAP_RADIUS;
+  assert.ok(bodySvg < 2, `33-mile body is ${bodySvg} svg units`);
+});
+

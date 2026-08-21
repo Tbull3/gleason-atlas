@@ -104,10 +104,12 @@ function AboutDialog() {
           <p>
             The sun and moon sit at their true overhead points for this
             instant — the same subsolar and sublunar positions Gleason’s
-            time arms were meant to track. The solid arm is solar noon; the
-            dashed arm is your civil meridian (local time, or US Central).
-            The clock follows the viewer’s timezone, with Central as a
-            pin.
+            time arms were meant to track. Each body is drawn 33 statute
+            miles across and 3,000 statute miles above the disc, on the
+            map’s geographical-mile scale. Switch to a side view to see
+            the height. The solid arm is solar noon; the dashed arm is
+            your civil meridian. The clock follows the viewer’s timezone,
+            with Central as a pin.
           </p>
           <p>
             Countries are colored by the selected metric. Figures are

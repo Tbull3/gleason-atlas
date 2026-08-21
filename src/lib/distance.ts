@@ -14,6 +14,17 @@ export const KM_PER_GEO = (6080 * 0.3048) / 1000;
 export const DISC_GEO_MILES = 180 * GEO_MILES_PER_DEGREE;
 export const SVG_PER_GEO_MILE = MAP_RADIUS / DISC_GEO_MILES;
 
+/**
+ * Local sun and moon on this disc — ~33 miles across, ~3,000 miles
+ * above the surface. Figures are statute miles, converted onto
+ * Gleason’s geographical scale so they size with the map.
+ */
+export const BODY_DIAMETER_STATUTE = 33;
+export const BODY_ALTITUDE_STATUTE = 3000;
+export const BODY_DIAMETER_GEO = BODY_DIAMETER_STATUTE / STATUTE_PER_GEO;
+export const BODY_ALTITUDE_GEO = BODY_ALTITUDE_STATUTE / STATUTE_PER_GEO;
+export const BODY_RADIUS_SVG = (BODY_DIAMETER_GEO / 2) * SVG_PER_GEO_MILE;
+
 /** The four cardinal meridians — the “four corners” of the disc at the ice. */
 export const CARDINAL_MERIDIANS = [
   { lon: 0, label: "Greenwich", short: "Greenwich" },

@@ -68,6 +68,9 @@ export function CelestialHud({ sky, now }: Props) {
             />
           </dl>
         )}
+        <p className="mt-2 text-xs leading-snug text-muted-foreground">
+          33 statute mi across · 3,000 statute mi up
+        </p>
       </div>
     </div>
   );

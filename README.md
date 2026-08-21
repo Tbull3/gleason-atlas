@@ -2,7 +2,7 @@
 
 A polar choropleth of the world on Alexander Gleason’s 1892 azimuthal equidistant projection — North Pole at the centre, Antarctica as the outer ice ring.
 
-Switch metrics (HDI, life expectancy, GDP, population, CO₂, density, area), hover for a reading, click a country for the full sheet, pan/zoom/rotate the disc, and switch viewing planes (overhead, pole, rim, transverse). The ruler shows Gleason’s 1892 geographical-mile scale, the four cardinal meridians at the ice, and click-to-measure on the disc. The sun and moon sit at their live overhead points; the clock uses the viewer’s timezone, with US Central as a pin.
+Switch metrics (HDI, life expectancy, GDP, population, CO₂, density, area), hover for a reading, click a country for the full sheet, pan/zoom/rotate the disc, and switch viewing planes (overhead, pole, rim, transverse). The ruler shows Gleason’s 1892 geographical-mile scale, the four cardinal meridians at the ice, and click-to-measure on the disc. The sun and moon sit at their live overhead points, 33 miles across and 3,000 miles above the disc. The clock uses the viewer’s timezone, with US Central as a pin.
 
 The atlas is open to browse — no account required.
 

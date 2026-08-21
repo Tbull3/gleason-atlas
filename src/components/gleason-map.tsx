@@ -42,9 +42,18 @@ import { ViewSwitcher } from "@/components/view-switcher";
 import { DiskRim } from "@/components/disk-rim";
 import { GleasonMarks } from "@/components/gleason-marks";
 import { DistanceHud } from "@/components/distance-hud";
-import { CelestialBodies } from "@/components/celestial-bodies";
+import { CelestialBodies, CelestialOrbs } from "@/components/celestial-bodies";
 import { CelestialHud } from "@/components/celestial-hud";
-import { invertLonLat, projectMeasure, discMeasure, formatCount, type MeasurePoint } from "@/lib/distance";
+import {
+  invertLonLat,
+  projectMeasure,
+  discMeasure,
+  formatCount,
+  BODY_ALTITUDE_GEO,
+  BODY_DIAMETER_GEO,
+  DISC_GEO_MILES,
+  type MeasurePoint,
+} from "@/lib/distance";
 import {
   CENTRAL_TZ,
   formatZoneAbbrev,
@@ -91,6 +100,7 @@ export function GleasonMap() {
   const diskRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const zoomLayerRef = useRef<SVGGElement>(null);
+  const celestialZoomRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const transformRef = useRef(zoomIdentity);
   const viewModeRef = useRef<ViewMode>("plan");
@@ -244,6 +254,11 @@ export function GleasonMap() {
           "transform",
           event.transform.toString(),
         );
+        const el = celestialZoomRef.current;
+        if (el) {
+          const t = event.transform;
+          el.style.transform = `translate(${(t.x / MAP_SIZE) * 100}%, ${(t.y / MAP_SIZE) * 100}%) scale3d(${t.k}, ${t.k}, ${t.k})`;
+        }
       });
     svg.call(z);
     zoomRef.current = z;
@@ -263,6 +278,14 @@ export function GleasonMap() {
       const size = board.clientWidth;
       const r = size * RIM_RATIO;
       board.style.setProperty("--disk-r", `${r}px`);
+      board.style.setProperty(
+        "--celestial-h",
+        `${r * (BODY_ALTITUDE_GEO / DISC_GEO_MILES)}px`,
+      );
+      board.style.setProperty(
+        "--body-d",
+        `${Math.max(2, r * (BODY_DIAMETER_GEO / DISC_GEO_MILES))}px`,
+      );
       board.style.setProperty(
         "--rim-seg-w",
         `${((2 * Math.PI * r) / DISK_RIM_SEGMENTS) * 1.12}px`,
@@ -762,6 +785,19 @@ export function GleasonMap() {
                     ))}
                   </g>
                 </svg>
+              </div>
+              <div className="celestial-space">
+                <div
+                  ref={celestialZoomRef}
+                  className="celestial-zoom"
+                  style={{
+                    transform: `translate(${(transformRef.current.x / MAP_SIZE) * 100}%, ${(transformRef.current.y / MAP_SIZE) * 100}%) scale3d(${transformRef.current.k}, ${transformRef.current.k}, ${transformRef.current.k})`,
+                  }}
+                >
+                  {sky && (
+                    <CelestialOrbs projection={projection} sky={sky} />
+                  )}
+                </div>
               </div>
             </div>
           </div>

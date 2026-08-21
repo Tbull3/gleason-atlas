@@ -15,7 +15,20 @@ type Props = {
 };
 
 export function MapControls({ onZoomIn, onZoomOut, onReset }: Props) {
+  const viewMode = useAtlas((s) => s.viewMode);
   const setRotation = useAtlas((s) => s.setRotation);
+  const setTurn = useAtlas((s) => s.setTurn);
+  const spatial = viewMode !== "plan";
+
+  function rotateWest() {
+    if (spatial) setTurn((t) => t - 18);
+    else setRotation((r) => r - 15);
+  }
+
+  function rotateEast() {
+    if (spatial) setTurn((t) => t + 18);
+    else setRotation((r) => r + 15);
+  }
 
   return (
     <div className="absolute right-3 bottom-24 z-10 flex flex-col gap-1 sm:right-5 sm:bottom-6">
@@ -28,10 +41,16 @@ export function MapControls({ onZoomIn, onZoomOut, onReset }: Props) {
       <Control label="Reset view" onClick={onReset}>
         <Maximize2 />
       </Control>
-      <Control label="Rotate west" onClick={() => setRotation((r) => r - 15)}>
+      <Control
+        label={spatial ? "Turn west" : "Rotate west"}
+        onClick={rotateWest}
+      >
         <RotateCcw />
       </Control>
-      <Control label="Rotate east" onClick={() => setRotation((r) => r + 15)}>
+      <Control
+        label={spatial ? "Turn east" : "Rotate east"}
+        onClick={rotateEast}
+      >
         <RotateCw />
       </Control>
     </div>

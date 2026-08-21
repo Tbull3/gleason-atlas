@@ -48,6 +48,9 @@
   --radius: 8px;
 
   --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --disk-thick: 16px;
+  --disk-r: 46%;
 }
 
 @layer base {
@@ -178,8 +181,210 @@
   font-family: var(--font-sans);
 }
 
+.map-viewport {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-background);
+  user-select: none;
+}
+
+.map-space {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  perspective: 1420px;
+  perspective-origin: 50% 42%;
+  container-type: size;
+}
+
+.map-board {
+  position: relative;
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  transform-style: preserve-3d;
+}
+
+.map-rig {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+}
+
+.map-rig.is-animated,
+.map-disk.is-animated {
+  transition: transform 720ms var(--ease-smooth-out);
+}
+
+.map-disk {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+}
+
+.map-disk-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  clip-path: circle(50% at 50% 50%);
+  transform: translateZ(var(--disk-thick));
+  background: var(--color-background);
+}
+
+.map-disk-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 50%;
+  background: linear-gradient(
+    165deg,
+    color-mix(in oklab, var(--color-foreground) 7%, transparent),
+    transparent 52%,
+    color-mix(in oklab, var(--color-background) 28%, transparent)
+  );
+  opacity: 0;
+  transition: opacity 420ms var(--ease-smooth-out);
+}
+
+.map-disk-lip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--disk-r) * 2);
+  height: calc(var(--disk-r) * 2);
+  pointer-events: none;
+  border-radius: 50%;
+  border: 2px solid var(--color-map-ring);
+  transform: translate(-50%, -50%) translateZ(var(--disk-thick));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-background) 40%, transparent);
+}
+
+.map-disk-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      var(--color-ice) 0%,
+      var(--color-ocean) 72%,
+      var(--color-background) 100%
+    );
+  transform: translateZ(calc(-1 * var(--disk-thick))) rotateY(180deg);
+  backface-visibility: hidden;
+}
+
+.disk-rim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.disk-rim-seg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--rim-seg-w, 28px);
+  height: calc(var(--disk-thick) * 2);
+  margin: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--color-map-ring),
+    var(--color-ice) 38%,
+    var(--color-ocean)
+  );
+  transform-origin: center center;
+}
+
+.map-ground-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 7%;
+  width: 62%;
+  height: 14%;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in oklab, var(--color-background) 88%, black),
+    transparent 72%
+  );
+  opacity: 0;
+  transform: translateX(-50%);
+  filter: blur(18px);
+  transition: opacity 420ms var(--ease-smooth-out);
+}
+
+.map-viewport:not([data-view="plan"]) .map-disk-face::after {
+  opacity: 1;
+}
+
+.map-viewport:not([data-view="plan"]) .map-ground-shadow {
+  opacity: 0.9;
+}
+
+.map-viewport:not([data-view="plan"]) .map-space {
+  cursor: grab;
+  touch-action: none;
+}
+
+.map-viewport:not([data-view="plan"]) .map-space:active {
+  cursor: grabbing;
+}
+
+.map-viewport[data-view="pole"] .map-space {
+  perspective: 1340px;
+  perspective-origin: 50% 52%;
+}
+
+.map-viewport[data-view="pole"] .map-ground-shadow {
+  bottom: 6%;
+  width: 70%;
+  height: 16%;
+}
+
+.map-viewport[data-view="pole"] .map-disk-face::after {
+  background: linear-gradient(
+    to top,
+    color-mix(in oklab, var(--color-foreground) 6%, transparent),
+    transparent 32%,
+    color-mix(in oklab, var(--color-background) 42%, transparent)
+  );
+}
+
+.map-viewport[data-view="plan"] .map-disk-face {
+  overflow: visible;
+  border-radius: 0;
+  clip-path: none;
+  transform: none;
+  background: transparent;
+}
+
+.map-viewport[data-view="plan"] .map-disk-back,
+.map-viewport[data-view="plan"] .disk-rim,
+.map-viewport[data-view="plan"] .map-disk-lip {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .country-path {
+    transition: none;
+  }
+
+  .map-rig.is-animated,
+  .map-disk.is-animated,
+  .map-disk-face::after,
+  .map-ground-shadow {
     transition: none;
   }
 }

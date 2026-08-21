@@ -88,11 +88,18 @@ function AboutDialog() {
             The equator is the circle halfway to the rim.
           </p>
           <p>
+            Four viewing planes: overhead looks down the polar axis; from
+            the pole stands at the centre and looks out to the ice; from
+            the rim stands at the outer ice and looks in toward the pole;
+            transverse is the same disc seen across a meridian, nearly
+            edge-on. In the side views, drag to turn the disc, or use the
+            rotate buttons and arrow keys.
+          </p>
+          <p>
             Countries are colored by the selected metric. Figures are
             illustrative 2024 estimates compiled for this atlas — useful for
             comparison, not official statistics. Hover for a reading, click
-            for the full country sheet, pan and zoom the disc, and rotate
-            around the pole.
+            for the full country sheet.
           </p>
         </div>
       </DialogContent>

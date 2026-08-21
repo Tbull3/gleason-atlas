@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { select } from "d3-selection";
 import { zoom as d3zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
@@ -25,10 +26,20 @@ import {
 import { createColorScale } from "@/lib/color-scale";
 import { ANTARCTICA_KEY, metricValue } from "@/data/countries";
 import { METRICS, formatMetric } from "@/data/metrics";
+import {
+  VIEW_PRESETS,
+  DISK_RIM_SEGMENTS,
+  clamp,
+  nearEdgeAngle,
+  wrapDeg,
+  type ViewMode,
+} from "@/lib/view-modes";
 import { useAtlas } from "@/lib/atlas-store";
 import { MapTooltip } from "@/components/map-tooltip";
 import { MapLegend } from "@/components/map-legend";
 import { MapControls } from "@/components/map-controls";
+import { ViewSwitcher } from "@/components/view-switcher";
+import { DiskRim } from "@/components/disk-rim";
 
 type TooltipState = {
   x: number;
@@ -46,20 +57,60 @@ type DrawnCountry = {
   value: number | null;
 };
 
+const RIM_RATIO = MAP_RADIUS / MAP_SIZE;
+const DOLLY_MIN = 0.45;
+const DOLLY_MAX = 2.6;
+
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function motionDuration(ms: number) {
+  return prefersReducedMotion() ? 0 : ms;
+}
+
 export function GleasonMap() {
   const svgRef = useRef<SVGSVGElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const rigRef = useRef<HTMLDivElement>(null);
+  const diskRef = useRef<HTMLDivElement>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
   const zoomLayerRef = useRef<SVGGElement>(null);
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const transformRef = useRef(zoomIdentity);
+  const viewModeRef = useRef<ViewMode>("plan");
+  const turnRef = useRef(0);
+  const pitchRef = useRef(0);
+  const dollyRef = useRef(1);
+  const dragRef = useRef<{
+    id: number;
+    x: number;
+    y: number;
+    turn: number;
+    pitch: number;
+    moved: boolean;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
   const [tooltip, setTooltip] = useState<TooltipState>(null);
 
   const metric = useAtlas((s) => s.metric);
   const rotation = useAtlas((s) => s.rotation);
+  const viewMode = useAtlas((s) => s.viewMode);
+  const turn = useAtlas((s) => s.turn);
   const selectedKey = useAtlas((s) => s.selectedKey);
   const hoveredKey = useAtlas((s) => s.hoveredKey);
   const focusToken = useAtlas((s) => s.focusToken);
   const setSelectedKey = useAtlas((s) => s.setSelectedKey);
   const setHoveredKey = useAtlas((s) => s.setHoveredKey);
+  const setTurn = useAtlas((s) => s.setTurn);
+
+  viewModeRef.current = viewMode;
+  if (!dragRef.current) {
+    turnRef.current = turn;
+  }
 
   const projection = useMemo(
     () => createGleasonProjection(rotation),
@@ -102,6 +153,36 @@ export function GleasonMap() {
       .filter(Boolean) as { x: number; y: number; label: string }[];
   }, [projection]);
 
+  const applyAttitude = useCallback((animate: boolean) => {
+    const rig = rigRef.current;
+    const disk = diskRef.current;
+    if (!rig || !disk) return;
+    const mode = viewModeRef.current;
+    const preset = VIEW_PRESETS[mode];
+    const pitch = pitchRef.current;
+    const tilt =
+      mode === "rim" || mode === "pole"
+        ? clamp(
+            preset.tilt + pitch,
+            mode === "pole" ? 64 : 42,
+            mode === "pole" ? 84 : 76,
+          )
+        : preset.tilt;
+    const bank =
+      mode === "transverse" ? clamp(preset.bank + pitch, 48, 82) : preset.bank;
+    const spatial = mode !== "plan";
+    const dolly = spatial ? dollyRef.current * preset.scale : 1;
+    const motion = animate && !prefersReducedMotion();
+    rig.classList.toggle("is-animated", motion);
+    disk.classList.toggle("is-animated", motion);
+    // Spin/tilt around the pole (disc centre), then boom the camera.
+    disk.style.transform = `rotateX(${tilt}deg) rotateY(${bank}deg) rotateZ(${turnRef.current}deg)`;
+    const camY =
+      preset.camY !== 0 ? `translateY(calc(${preset.camY} * var(--disk-r)))` : "";
+    const camZ = preset.camZ !== 0 ? `translateZ(${preset.camZ}px)` : "";
+    rig.style.transform = `${camY} ${camZ} scale(${dolly})`.trim();
+  }, []);
+
   useEffect(() => {
     const svgEl = svgRef.current;
     if (!svgEl) return;
@@ -112,6 +193,11 @@ export function GleasonMap() {
         [0, 0],
         [MAP_SIZE, MAP_SIZE],
       ])
+      .filter((event) => {
+        if (viewModeRef.current !== "plan") return false;
+        if ("button" in event && event.button) return false;
+        return true;
+      })
       .on("zoom", (event) => {
         transformRef.current = event.transform;
         zoomLayerRef.current?.setAttribute(
@@ -129,26 +215,87 @@ export function GleasonMap() {
   }, []);
 
   useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    function syncSize() {
+      if (!board) return;
+      const size = board.clientWidth;
+      const r = size * RIM_RATIO;
+      board.style.setProperty("--disk-r", `${r}px`);
+      board.style.setProperty(
+        "--rim-seg-w",
+        `${((2 * Math.PI * r) / DISK_RIM_SEGMENTS) * 1.12}px`,
+      );
+    }
+
+    syncSize();
+    const ro = new ResizeObserver(syncSize);
+    ro.observe(board);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    function onWheel(event: WheelEvent) {
+      if (viewModeRef.current === "plan") return;
+      event.preventDefault();
+      const factor = event.deltaY > 0 ? 1 / 1.08 : 1.08;
+      dollyRef.current = clamp(dollyRef.current * factor, DOLLY_MIN, DOLLY_MAX);
+      applyAttitude(false);
+    }
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [applyAttitude]);
+
+  useEffect(() => {
+    applyAttitude(true);
+  }, [viewMode, turn, applyAttitude]);
+
+  useEffect(() => {
+    const svgEl = svgRef.current;
+    const z = zoomRef.current;
+    if (!svgEl || !z) return;
+    if (viewMode !== "plan") {
+      select(svgEl).call(z.transform, zoomIdentity);
+      transformRef.current = zoomIdentity;
+      zoomLayerRef.current?.setAttribute("transform", "");
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
     const svgEl = svgRef.current;
     const z = zoomRef.current;
     if (!svgEl || !z || !selectedKey) return;
     const country = GEO_COUNTRIES.find((c) => c.key === selectedKey);
     if (!country) return;
-    const bounds = geoPath(projection).bounds(country.feature);
-    const [[x0, y0], [x1, y1]] = bounds;
-    const w = Math.max(x1 - x0, 8);
-    const h = Math.max(y1 - y0, 8);
-    const k = Math.min(10, 0.62 / Math.max(w / MAP_SIZE, h / MAP_SIZE));
-    const tx = MAP_SIZE / 2 - (k * (x0 + x1)) / 2;
-    const ty = MAP_SIZE / 2 - (k * (y0 + y1)) / 2;
-    const next = zoomIdentity.translate(tx, ty).scale(k);
-    const reduce =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    select(svgEl)
-      .transition()
-      .duration(reduce ? 0 : 700)
-      .call(z.transform, next);
+
+    if (viewModeRef.current === "plan") {
+      const bounds = geoPath(projection).bounds(country.feature);
+      const [[x0, y0], [x1, y1]] = bounds;
+      const w = Math.max(x1 - x0, 8);
+      const h = Math.max(y1 - y0, 8);
+      const k = Math.min(10, 0.62 / Math.max(w / MAP_SIZE, h / MAP_SIZE));
+      const tx = MAP_SIZE / 2 - (k * (x0 + x1)) / 2;
+      const ty = MAP_SIZE / 2 - (k * (y0 + y1)) / 2;
+      const next = zoomIdentity.translate(tx, ty).scale(k);
+      select(svgEl)
+        .transition()
+        .duration(motionDuration(700))
+        .call(z.transform, next);
+      return;
+    }
+
+    const centroid = geoPath(projection).centroid(country.feature);
+    if (!Number.isFinite(centroid[0])) return;
+    const deg =
+      (Math.atan2(centroid[1] - MAP_SIZE / 2, centroid[0] - MAP_SIZE / 2) *
+        180) /
+      Math.PI;
+    const nextTurn = wrapDeg(nearEdgeAngle(viewModeRef.current) - deg);
+    turnRef.current = nextTurn;
+    setTurn(nextTurn);
     // focusToken is the trigger; selectedKey identifies the target
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusToken]);
@@ -159,22 +306,21 @@ export function GleasonMap() {
         setSelectedKey(null);
         setTooltip(null);
       }
+      if (viewModeRef.current === "plan") return;
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setTurn((t) => t - 12);
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        setTurn((t) => t + 12);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [setSelectedKey]);
+  }, [setSelectedKey, setTurn]);
 
-  function motionDuration(ms: number) {
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return 0;
-    }
-    return ms;
-  }
-
-  function resetView() {
+  function resetD3() {
     const svgEl = svgRef.current;
     const z = zoomRef.current;
     if (!svgEl || !z) return;
@@ -184,7 +330,21 @@ export function GleasonMap() {
       .call(z.transform, zoomIdentity);
   }
 
+  function resetView() {
+    pitchRef.current = 0;
+    dollyRef.current = 1;
+    turnRef.current = 0;
+    setTurn(0);
+    applyAttitude(true);
+    resetD3();
+  }
+
   function zoomBy(factor: number) {
+    if (viewModeRef.current !== "plan") {
+      dollyRef.current = clamp(dollyRef.current * factor, DOLLY_MIN, DOLLY_MAX);
+      applyAttitude(true);
+      return;
+    }
     const svgEl = svgRef.current;
     const z = zoomRef.current;
     if (!svgEl || !z) return;
@@ -205,7 +365,7 @@ export function GleasonMap() {
 
   const showTip = useCallback(
     (event: MouseEvent<SVGPathElement>, country: DrawnCountry) => {
-      const rect = svgRef.current?.parentElement?.getBoundingClientRect();
+      const rect = viewportRef.current?.getBoundingClientRect();
       if (!rect) return;
       const px = event.clientX - rect.left;
       const py = event.clientY - rect.top;
@@ -227,6 +387,7 @@ export function GleasonMap() {
 
   const onEnter = useCallback(
     (event: MouseEvent<SVGPathElement>, country: DrawnCountry) => {
+      if (dragRef.current?.moved) return;
       setHoveredKey(country.key);
       showTip(event, country);
     },
@@ -235,6 +396,7 @@ export function GleasonMap() {
 
   const onMove = useCallback(
     (event: MouseEvent<SVGPathElement>, country: DrawnCountry) => {
+      if (dragRef.current?.moved) return;
       showTip(event, country);
     },
     [showTip],
@@ -247,107 +409,207 @@ export function GleasonMap() {
 
   const onSelect = useCallback(
     (key: string, active: boolean) => {
+      if (suppressClickRef.current) {
+        suppressClickRef.current = false;
+        return;
+      }
       setSelectedKey(active ? null : key);
     },
     [setSelectedKey],
   );
 
+  function onStagePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (viewModeRef.current === "plan") return;
+    if (event.button !== 0) return;
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest(".map-space")) return;
+    dragRef.current = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      turn: turnRef.current,
+      pitch: pitchRef.current,
+      moved: false,
+    };
+  }
+
+  function onStagePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.id !== event.pointerId) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      suppressClickRef.current = true;
+      setTooltip(null);
+      setHoveredKey(null);
+      viewportRef.current?.setPointerCapture(event.pointerId);
+    }
+    turnRef.current = wrapDeg(drag.turn + dx * 0.42);
+    pitchRef.current = clamp(drag.pitch - dy * 0.12, -18, 18);
+    applyAttitude(false);
+  }
+
+  function onStagePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.id !== event.pointerId) return;
+    if (drag.moved) {
+      setTurn(turnRef.current);
+    }
+    dragRef.current = null;
+  }
+
   const pole = projection([0, 90]);
   const def = METRICS[metric];
   const cx = MAP_SIZE / 2;
   const cy = MAP_SIZE / 2;
+  const spatial = viewMode !== "plan";
 
   return (
-    <div className="relative h-full min-h-0 w-full overflow-hidden bg-background select-none">
-      <svg
-        ref={svgRef}
-        viewBox={`0 0 ${MAP_SIZE} ${MAP_SIZE}`}
-        className="h-full w-full cursor-grab touch-none active:cursor-grabbing"
-        role="img"
-        aria-label={`Gleason polar map colored by ${def.label}`}
-        onDoubleClick={resetView}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) setSelectedKey(null);
-        }}
-      >
-        <rect
-          width={MAP_SIZE}
-          height={MAP_SIZE}
-          fill="var(--color-background)"
-          onClick={() => setSelectedKey(null)}
-        />
-        <g
-          ref={zoomLayerRef}
-          transform={transformRef.current.toString()}
-        >
-          <circle
-            cx={cx}
-            cy={cy}
-            r={MAP_RADIUS + 14}
-            className="map-outer-ring"
-            pointerEvents="none"
-          />
-          <path
-            d={ocean}
-            className="map-sphere"
-            onClick={() => setSelectedKey(null)}
-          />
-          <path d={graticule} className="map-graticule" pointerEvents="none" />
-          <path d={equator} className="map-equator" pointerEvents="none" />
-          <CountryLayer
-            countries={countries}
-            selectedKey={selectedKey}
-            hoveredKey={hoveredKey}
-            colorFor={colorFor}
-            onEnter={onEnter}
-            onMove={onMove}
-            onLeave={onLeave}
-            onSelect={onSelect}
-          />
-          {pole && (
-            <circle
-              cx={pole[0]}
-              cy={pole[1]}
-              r={3.2}
-              fill="var(--color-foreground)"
-              pointerEvents="none"
-            />
-          )}
-          {latLabels.map((l) => (
-            <text
-              key={l.label}
-              x={l.x + 6}
-              y={l.y}
-              className="map-lat-label"
-              pointerEvents="none"
-            >
-              {l.label}
-            </text>
-          ))}
-          {rimMarks.map((m, i) => (
-            <g key={i} pointerEvents="none">
-              <line
-                x1={m.x1}
-                y1={m.y1}
-                x2={m.x2}
-                y2={m.y2}
-                className={m.major ? "rim-tick rim-tick-major" : "rim-tick"}
-              />
-              {m.label && (
-                <text
-                  x={m.lx}
-                  y={m.ly}
-                  className="rim-label"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
+    <div
+      ref={viewportRef}
+      className="map-viewport"
+      data-view={viewMode}
+      onPointerDown={onStagePointerDown}
+      onPointerMove={onStagePointerMove}
+      onPointerUp={onStagePointerUp}
+      onPointerCancel={onStagePointerUp}
+    >
+      <div className="map-ground-shadow" />
+      <div className="map-space">
+        <div ref={boardRef} className="map-board">
+          <div ref={rigRef} className="map-rig">
+            <div ref={diskRef} className="map-disk">
+              <div className="map-disk-back" />
+              <DiskRim />
+              <div className="map-disk-lip" />
+              <div className="map-disk-face">
+                <svg
+                  ref={svgRef}
+                  viewBox={`0 0 ${MAP_SIZE} ${MAP_SIZE}`}
+                  className={
+                    spatial
+                      ? "h-full w-full touch-none"
+                      : "h-full w-full cursor-grab touch-none active:cursor-grabbing"
+                  }
+                  role="img"
+                  aria-label={`Gleason polar map colored by ${def.label}, ${VIEW_PRESETS[viewMode].label} view`}
+                  onDoubleClick={resetView}
+                  onClick={(e) => {
+                    if (suppressClickRef.current) {
+                      suppressClickRef.current = false;
+                      return;
+                    }
+                    if (e.target === e.currentTarget) setSelectedKey(null);
+                  }}
                 >
-                  {m.label}
-                </text>
-              )}
-            </g>
-          ))}
-        </g>
-      </svg>
+                  <rect
+                    width={MAP_SIZE}
+                    height={MAP_SIZE}
+                    fill="var(--color-background)"
+                    onClick={() => {
+                      if (suppressClickRef.current) {
+                        suppressClickRef.current = false;
+                        return;
+                      }
+                      setSelectedKey(null);
+                    }}
+                  />
+                  <g
+                    ref={zoomLayerRef}
+                    transform={transformRef.current.toString()}
+                  >
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={MAP_RADIUS + 14}
+                      className="map-outer-ring"
+                      pointerEvents="none"
+                    />
+                    <path
+                      d={ocean}
+                      className="map-sphere"
+                      onClick={() => {
+                        if (suppressClickRef.current) {
+                          suppressClickRef.current = false;
+                          return;
+                        }
+                        setSelectedKey(null);
+                      }}
+                    />
+                    <path
+                      d={graticule}
+                      className="map-graticule"
+                      pointerEvents="none"
+                    />
+                    <path
+                      d={equator}
+                      className="map-equator"
+                      pointerEvents="none"
+                    />
+                    <CountryLayer
+                      countries={countries}
+                      selectedKey={selectedKey}
+                      hoveredKey={hoveredKey}
+                      colorFor={colorFor}
+                      onEnter={onEnter}
+                      onMove={onMove}
+                      onLeave={onLeave}
+                      onSelect={onSelect}
+                    />
+                    {pole && (
+                      <circle
+                        cx={pole[0]}
+                        cy={pole[1]}
+                        r={3.2}
+                        fill="var(--color-foreground)"
+                        pointerEvents="none"
+                      />
+                    )}
+                    {latLabels.map((l) => (
+                      <text
+                        key={l.label}
+                        x={l.x + 6}
+                        y={l.y}
+                        className="map-lat-label"
+                        pointerEvents="none"
+                      >
+                        {l.label}
+                      </text>
+                    ))}
+                    {rimMarks.map((m, i) => (
+                      <g key={i} pointerEvents="none">
+                        <line
+                          x1={m.x1}
+                          y1={m.y1}
+                          x2={m.x2}
+                          y2={m.y2}
+                          className={
+                            m.major ? "rim-tick rim-tick-major" : "rim-tick"
+                          }
+                        />
+                        {m.label && (
+                          <text
+                            x={m.lx}
+                            y={m.ly}
+                            className="rim-label"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                          >
+                            {m.label}
+                          </text>
+                        )}
+                      </g>
+                    ))}
+                  </g>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <ViewSwitcher />
       <MapLegend scale={scale} metric={metric} />
       <MapControls
         onZoomIn={() => zoomBy(1.35)}

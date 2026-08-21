@@ -22,7 +22,7 @@ export function AtlasApp() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
-      <header className="relative z-20 flex shrink-0 flex-col gap-2 border-b border-border px-3 py-2.5 sm:px-4">
+      <header className="relative z-20 flex shrink-0 flex-col gap-2 border-b border-border px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-4">
         <div className="flex items-center gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <Compass className="size-5 shrink-0 text-accent" />
@@ -70,9 +70,9 @@ function AboutDialog() {
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           aria-label="About this map"
-          className="text-muted-foreground"
+          className="size-10 text-muted-foreground"
         >
           <Info />
         </Button>

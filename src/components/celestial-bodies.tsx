@@ -271,23 +271,24 @@ function CelestialPost({
         {
           left: `${(x / MAP_SIZE) * 100}%`,
           top: `${(y / MAP_SIZE) * 100}%`,
-          ["--lit-angle"]: `${litAngle}deg`,
         } as CSSProperties
       }
     >
       {kind === "sun" && <span className="celestial-cone" />}
       <span className="celestial-stem" />
-      <span
-        className={`celestial-orb is-${kind}`}
-        style={
-          kind === "moon"
-            ? {
-                backgroundImage: `linear-gradient(90deg, var(--color-moon-shadow) ${100 - lit}%, var(--color-moon) ${100 - lit}%)`,
-              }
-            : undefined
-        }
-        aria-label={label}
-      />
+      <span className="celestial-lift">
+        <span
+          className={`celestial-orb is-${kind}`}
+          style={
+            kind === "moon"
+              ? {
+                  backgroundImage: `linear-gradient(${litAngle + 90}deg, var(--color-moon-shadow) ${100 - lit}%, var(--color-moon) ${100 - lit}%)`,
+                }
+              : undefined
+          }
+          aria-label={label}
+        />
+      </span>
     </div>
   );
 }

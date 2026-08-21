@@ -29,16 +29,21 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed top-1/2 left-1/2 z-50 w-[min(92vw,32rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-surface p-6 shadow-lg",
+        "fixed top-[max(0.75rem,env(safe-area-inset-top))] left-1/2 z-50 flex w-[min(92vw,32rem)] max-h-[calc(100dvh-1.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg sm:top-1/2 sm:-translate-y-1/2",
         className,
       )}
       {...props}
     >
-      {children}
-      <DialogPrimitive.Close className="absolute top-4 right-4 rounded-sm p-1 text-muted-foreground transition-opacity duration-150 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none">
-        <X className="size-4" />
+      <DialogPrimitive.Close
+        aria-label="Close"
+        className="absolute top-2 right-2 z-10 inline-flex size-11 items-center justify-center rounded-full bg-surface text-foreground ring-1 ring-border transition-[background-color,color] duration-150 hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none"
+      >
+        <X className="size-5" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
+      <div className="overflow-y-auto overscroll-contain p-6 pr-14">
+        {children}
+      </div>
     </DialogPrimitive.Content>
   </DialogPortal>
 ));

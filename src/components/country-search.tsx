@@ -23,7 +23,7 @@ export function CountrySearch() {
   }, [query]);
 
   return (
-    <div ref={boxRef} className="relative w-full md:max-w-72">
+    <div ref={boxRef} className="relative w-full">
       <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={query}

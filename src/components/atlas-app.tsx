@@ -3,6 +3,7 @@ import { GleasonMap } from "@/components/gleason-map";
 import { CountryPanel } from "@/components/country-panel";
 import { MetricSwitcher } from "@/components/metric-switcher";
 import { CountrySearch } from "@/components/country-search";
+import { CelestialHud } from "@/components/celestial-hud";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,7 +22,7 @@ export function AtlasApp() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
-      <header className="flex shrink-0 flex-col gap-2 border-b border-border px-3 py-2.5 sm:px-4">
+      <header className="relative z-20 flex shrink-0 flex-col gap-2 border-b border-border px-3 py-2.5 sm:px-4">
         <div className="flex items-center gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <Compass className="size-5 shrink-0 text-accent" />
@@ -34,16 +35,15 @@ export function AtlasApp() {
               </p>
             </div>
           </div>
-          <div className="ml-auto hidden md:block">
-            <CountrySearch />
+          <div className="ml-auto">
+            <AboutDialog />
           </div>
-          <AboutDialog />
         </div>
-        <div className="min-w-0 w-full">
-          <MetricSwitcher />
-        </div>
-        <div className="md:hidden">
-          <CountrySearch />
+        <div className="flex flex-col gap-2 md:flex-row md:items-start">
+          <div className="min-w-0 flex-1">
+            <MetricSwitcher />
+          </div>
+          <HeaderSearch />
         </div>
       </header>
       <div className="flex min-h-0 flex-1">
@@ -52,6 +52,15 @@ export function AtlasApp() {
         </div>
         <CountryPanel />
       </div>
+    </div>
+  );
+}
+
+function HeaderSearch() {
+  return (
+    <div className="w-full min-w-0 md:w-72">
+      <CountrySearch />
+      <CelestialHud />
     </div>
   );
 }

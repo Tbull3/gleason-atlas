@@ -43,7 +43,6 @@ import { DiskRim } from "@/components/disk-rim";
 import { GleasonMarks } from "@/components/gleason-marks";
 import { DistanceHud } from "@/components/distance-hud";
 import { CelestialBodies, CelestialOrbs } from "@/components/celestial-bodies";
-import { CelestialHud } from "@/components/celestial-hud";
 import {
   invertLonLat,
   projectMeasure,
@@ -805,7 +804,6 @@ export function GleasonMap() {
         </div>
       </div>
       <ViewSwitcher />
-      <CelestialHud sky={sky} now={now} />
       {measureMode && (
         <DistanceHud
           a={drawnA}

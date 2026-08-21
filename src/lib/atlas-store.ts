@@ -17,6 +17,7 @@ type AtlasState = {
   focusToken: number;
   measureMode: boolean;
   clockZone: "local" | "central";
+  clockOpen: boolean;
   setMetric: (metric: MetricId) => void;
   setSelectedKey: (selectedKey: string | null) => void;
   setHoveredKey: (hoveredKey: string | null) => void;
@@ -27,6 +28,7 @@ type AtlasState = {
   focusCountry: (key: string) => void;
   setMeasureMode: (measureMode: boolean | ((current: boolean) => boolean)) => void;
   setClockZone: (clockZone: "local" | "central") => void;
+  setClockOpen: (clockOpen: boolean | ((current: boolean) => boolean)) => void;
 };
 
 export const useAtlas = create<AtlasState>((set) => ({
@@ -40,6 +42,7 @@ export const useAtlas = create<AtlasState>((set) => ({
   focusToken: 0,
   measureMode: false,
   clockZone: "local",
+  clockOpen: false,
   setMetric: (metric) => set({ metric }),
   setSelectedKey: (selectedKey) => set({ selectedKey }),
   setHoveredKey: (hoveredKey) => set({ hoveredKey }),
@@ -67,6 +70,11 @@ export const useAtlas = create<AtlasState>((set) => ({
           : measureMode,
     })),
   setClockZone: (clockZone) => set({ clockZone }),
+  setClockOpen: (clockOpen) =>
+    set((s) => ({
+      clockOpen:
+        typeof clockOpen === "function" ? clockOpen(s.clockOpen) : clockOpen,
+    })),
   focusCountry: (key) =>
     set((s) => ({
       selectedKey: key,

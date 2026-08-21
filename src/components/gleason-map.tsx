@@ -223,6 +223,9 @@ export function GleasonMap() {
     disk.classList.toggle("is-animated", motion);
     // Spin/tilt around the pole (disc centre), then boom the camera.
     disk.style.transform = `rotateX(${tilt}deg) rotateY(${bank}deg) rotateZ(${turnRef.current}deg)`;
+    disk.style.setProperty("--disk-tilt", `${tilt}deg`);
+    disk.style.setProperty("--disk-bank", `${bank}deg`);
+    disk.style.setProperty("--disk-turn", `${turnRef.current}deg`);
     const camY =
       preset.camY !== 0 ? `translateY(calc(${preset.camY} * var(--disk-r)))` : "";
     const camZ = preset.camZ !== 0 ? `translateZ(${preset.camZ}px)` : "";

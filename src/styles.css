@@ -219,9 +219,31 @@
   transform-origin: 50% 50%;
 }
 
+@property --disk-tilt {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@property --disk-bank {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@property --disk-turn {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+
 .map-rig.is-animated,
 .map-disk.is-animated {
-  transition: transform 720ms var(--ease-smooth-out);
+  transition:
+    transform 720ms var(--ease-smooth-out),
+    --disk-tilt 720ms var(--ease-smooth-out),
+    --disk-bank 720ms var(--ease-smooth-out),
+    --disk-turn 720ms var(--ease-smooth-out);
 }
 
 .map-disk {
@@ -618,17 +640,31 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
+  transform: rotateZ(calc(var(--disk-turn, 0deg) * -1))
+    rotateY(calc(var(--disk-bank, 0deg) * -1))
+    rotateX(calc(var(--disk-tilt, 0deg) * -1));
 }
 
 .celestial-orb.is-sun {
-  background: var(--color-sun-core);
+  background:
+    radial-gradient(
+      circle at 32% 28%,
+      #fffef6 0%,
+      var(--color-sun-core) 34%,
+      var(--color-sun) 68%,
+      color-mix(in oklab, var(--color-sun) 62%, #6f5420) 100%
+    );
   box-shadow:
+    inset -1px -1px 3px color-mix(in oklab, #4a3810 28%, transparent),
     0 0 6px 2px color-mix(in oklab, var(--color-sun) 85%, transparent),
     0 0 16px 5px color-mix(in oklab, var(--color-sun) 40%, transparent);
 }
 
 .celestial-orb.is-moon {
-  box-shadow: 0 0 6px 1px color-mix(in oklab, var(--color-moon) 40%, transparent);
+  background-color: var(--color-moon-shadow);
+  box-shadow:
+    inset -1px -2px 3px color-mix(in oklab, #05080a 55%, transparent),
+    0 0 6px 1px color-mix(in oklab, var(--color-moon) 40%, transparent);
 }
 
 

@@ -282,7 +282,7 @@ function CelestialPost({
           style={
             kind === "moon"
               ? {
-                  backgroundImage: `linear-gradient(${litAngle + 90}deg, var(--color-moon-shadow) ${100 - lit}%, var(--color-moon) ${100 - lit}%)`,
+                  backgroundImage: `radial-gradient(circle at 32% 28%, color-mix(in oklab, white 38%, transparent) 0%, transparent 42%), linear-gradient(${litAngle + 90}deg, var(--color-moon-shadow) ${100 - lit}%, var(--color-moon) ${100 - lit}%)`,
                 }
               : undefined
           }

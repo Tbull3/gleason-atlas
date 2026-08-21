@@ -59,18 +59,17 @@ export function CelestialHud({ sky, now }: Props) {
               name="Sun"
               place={formatLonLat(sky.sun.lon, sky.sun.lat)}
               note={`${formatGeoMiles(colatitudeGeoMiles(sky.sun.lat))} from the pole`}
+              spec="33 statute mi across · 3,000 statute mi up"
             />
             <SkyRow
               icon={Moon}
               name="Moon"
               place={formatLonLat(sky.moon.lon, sky.moon.lat)}
               note={sky.phaseName}
+              spec="33 statute mi across · 3,000 statute mi up"
             />
           </dl>
         )}
-        <p className="mt-2 text-xs leading-snug text-muted-foreground">
-          33 statute mi across · 3,000 statute mi up
-        </p>
       </div>
     </div>
   );
@@ -108,11 +107,13 @@ function SkyRow({
   name,
   place,
   note,
+  spec,
 }: {
   icon: typeof Sun;
   name: string;
   place: string;
   note: string;
+  spec?: string;
 }) {
   return (
     <div className="flex items-start gap-2">
@@ -125,6 +126,7 @@ function SkyRow({
           </dd>
         </div>
         <p className="text-xs text-muted-foreground">{note}</p>
+        {spec && <p className="text-xs text-muted-foreground">{spec}</p>}
       </div>
     </div>
   );

@@ -1,8 +1,13 @@
-import type { CSSProperties } from "react";
+import { useId, type CSSProperties } from "react";
 import type { GeoProjection } from "d3-geo";
-import { MAP_SIZE } from "@/lib/geo";
+import { MAP_RADIUS, MAP_SIZE } from "@/lib/geo";
 import { type SkyState } from "@/lib/astro";
-import { BODY_RADIUS_SVG, formatLonLat } from "@/lib/distance";
+import {
+  BODY_ALTITUDE_GEO,
+  BODY_RADIUS_DISPLAY_SVG,
+  SVG_PER_GEO_MILE,
+  formatLonLat,
+} from "@/lib/distance";
 
 type MarkProps = {
   projection: GeoProjection;
@@ -17,6 +22,7 @@ export function CelestialBodies({
   zoneMeridian,
   zoneAbbrev,
 }: MarkProps) {
+  const uid = useId().replace(/:/g, "");
   const cx = MAP_SIZE / 2;
   const cy = MAP_SIZE / 2;
   const pole = projection([0, 90]) ?? [cx, cy];
@@ -30,9 +36,21 @@ export function CelestialBodies({
     sun && moon
       ? (Math.atan2(sun[1] - moon[1], sun[0] - moon[0]) * 180) / Math.PI
       : 0;
+  const altitudeSvg = BODY_ALTITUDE_GEO * SVG_PER_GEO_MILE;
+  const lightRadius = altitudeSvg * 3.2;
 
   return (
     <g className="celestial-layer" pointerEvents="none">
+      {sun && (
+        <Sunlight
+          uid={uid}
+          cx={cx}
+          cy={cy}
+          sun={sun}
+          altitudeSvg={altitudeSvg}
+          lightRadius={lightRadius}
+        />
+      )}
       {sunRim && (
         <line
           x1={pole[0]}
@@ -77,7 +95,7 @@ export function CelestialBodies({
         <circle
           cx={sun[0]}
           cy={sun[1]}
-          r={BODY_RADIUS_SVG}
+          r={BODY_RADIUS_DISPLAY_SVG}
           className="map-sun-nadir"
         />
       )}
@@ -86,15 +104,110 @@ export function CelestialBodies({
           <circle
             cx={moon[0]}
             cy={moon[1]}
-            r={BODY_RADIUS_SVG}
+            r={BODY_RADIUS_DISPLAY_SVG}
             className="map-moon-nadir"
           />
         </g>
       )}
       <title>
-        {`Sun ${formatLonLat(sky.sun.lon, sky.sun.lat)}; Moon ${formatLonLat(sky.moon.lon, sky.moon.lat)} · ${sky.phaseName} · 33 mi across, 3,000 mi up`}
+        {`Sun ${formatLonLat(sky.sun.lon, sky.sun.lat)}; Moon ${formatLonLat(sky.moon.lon, sky.moon.lat)} · ${sky.phaseName} · 33 statute mi across, 3,000 statute mi up`}
       </title>
     </g>
+  );
+}
+
+function Sunlight({
+  uid,
+  cx,
+  cy,
+  sun,
+  altitudeSvg,
+  lightRadius,
+}: {
+  uid: string;
+  cx: number;
+  cy: number;
+  sun: [number, number];
+  altitudeSvg: number;
+  lightRadius: number;
+}) {
+  const night = `sun-night-${uid}`;
+  const day = `sun-day-${uid}`;
+  const clip = `sun-clip-${uid}`;
+  return (
+    <>
+      <defs>
+        <clipPath id={clip}>
+          <circle cx={cx} cy={cy} r={MAP_RADIUS} />
+        </clipPath>
+        <radialGradient
+          id={day}
+          gradientUnits="userSpaceOnUse"
+          cx={sun[0]}
+          cy={sun[1]}
+          r={altitudeSvg * 1.15}
+        >
+          <stop
+            offset="0%"
+            stopColor="var(--color-sun)"
+            stopOpacity="0.22"
+          />
+          <stop
+            offset="45%"
+            stopColor="var(--color-sun)"
+            stopOpacity="0.08"
+          />
+          <stop
+            offset="100%"
+            stopColor="var(--color-sun)"
+            stopOpacity="0"
+          />
+        </radialGradient>
+        <radialGradient
+          id={night}
+          gradientUnits="userSpaceOnUse"
+          cx={sun[0]}
+          cy={sun[1]}
+          r={lightRadius}
+        >
+          <stop offset="0%" stopColor="var(--color-background)" stopOpacity="0" />
+          <stop
+            offset="28%"
+            stopColor="var(--color-background)"
+            stopOpacity="0.06"
+          />
+          <stop
+            offset="48%"
+            stopColor="var(--color-background)"
+            stopOpacity="0.32"
+          />
+          <stop
+            offset="72%"
+            stopColor="var(--color-background)"
+            stopOpacity="0.62"
+          />
+          <stop
+            offset="100%"
+            stopColor="var(--color-background)"
+            stopOpacity="0.82"
+          />
+        </radialGradient>
+      </defs>
+      <circle
+        cx={cx}
+        cy={cy}
+        r={MAP_RADIUS}
+        fill={`url(#${day})`}
+        clipPath={`url(#${clip})`}
+      />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={MAP_RADIUS}
+        fill={`url(#${night})`}
+        clipPath={`url(#${clip})`}
+      />
+    </>
   );
 }
 
@@ -162,6 +275,7 @@ function CelestialPost({
         } as CSSProperties
       }
     >
+      {kind === "sun" && <span className="celestial-cone" />}
       <span className="celestial-stem" />
       <span
         className={`celestial-orb is-${kind}`}

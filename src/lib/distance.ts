@@ -24,6 +24,9 @@ export const BODY_ALTITUDE_STATUTE = 3000;
 export const BODY_DIAMETER_GEO = BODY_DIAMETER_STATUTE / STATUTE_PER_GEO;
 export const BODY_ALTITUDE_GEO = BODY_ALTITUDE_STATUTE / STATUTE_PER_GEO;
 export const BODY_RADIUS_SVG = (BODY_DIAMETER_GEO / 2) * SVG_PER_GEO_MILE;
+/** On-screen bodies are enlarged; the key still lists the true 33 / 3,000 mi figures. */
+export const BODY_DISPLAY_SCALE = 10;
+export const BODY_RADIUS_DISPLAY_SVG = BODY_RADIUS_SVG * BODY_DISPLAY_SCALE;
 
 /** The four cardinal meridians — the “four corners” of the disc at the ice. */
 export const CARDINAL_MERIDIANS = [

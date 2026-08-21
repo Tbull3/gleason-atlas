@@ -51,6 +51,7 @@ import {
   formatCount,
   BODY_ALTITUDE_GEO,
   BODY_DIAMETER_GEO,
+  BODY_DISPLAY_SCALE,
   DISC_GEO_MILES,
   type MeasurePoint,
 } from "@/lib/distance";
@@ -284,7 +285,7 @@ export function GleasonMap() {
       );
       board.style.setProperty(
         "--body-d",
-        `${Math.max(2, r * (BODY_DIAMETER_GEO / DISC_GEO_MILES))}px`,
+        `${Math.max(2, r * (BODY_DIAMETER_GEO / DISC_GEO_MILES) * BODY_DISPLAY_SCALE)}px`,
       );
       board.style.setProperty(
         "--rim-seg-w",

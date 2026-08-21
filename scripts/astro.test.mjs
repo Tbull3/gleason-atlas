@@ -131,5 +131,7 @@ test("sun and moon are 33 statute miles across, 3,000 miles up on the Gleason sc
   const MAP_RADIUS = (1000 - 42 * 2) / 2;
   const bodySvg = (diameterGeo / DISC_GEO_MILES) * MAP_RADIUS;
   assert.ok(bodySvg < 2, `33-mile body is ${bodySvg} svg units`);
+  const display = bodySvg * 10;
+  assert.ok(display > 8 && display < 14, `10× body is ${display} svg units`);
 });
 

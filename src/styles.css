@@ -578,7 +578,24 @@
   background: color-mix(in oklab, var(--color-moon) 45%, transparent);
 }
 
-.map-viewport[data-view="plan"] .celestial-stem {
+.celestial-cone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--celestial-h) * 2);
+  height: var(--celestial-h);
+  transform-origin: 50% 0;
+  transform: translate(-50%, 0) rotateX(-90deg);
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--color-sun) 32%, transparent),
+    color-mix(in oklab, var(--color-sun) 5%, transparent)
+  );
+}
+
+.map-viewport[data-view="plan"] .celestial-stem,
+.map-viewport[data-view="plan"] .celestial-cone {
   visibility: hidden;
 }
 
@@ -608,8 +625,8 @@
 .celestial-orb.is-sun {
   background: var(--color-sun-core);
   box-shadow:
-    0 0 4px 1px color-mix(in oklab, var(--color-sun) 80%, transparent),
-    0 0 10px 3px color-mix(in oklab, var(--color-sun) 35%, transparent);
+    0 0 6px 2px color-mix(in oklab, var(--color-sun) 85%, transparent),
+    0 0 16px 5px color-mix(in oklab, var(--color-sun) 40%, transparent);
 }
 
 .celestial-orb.is-moon {

@@ -128,7 +128,11 @@ export function CelestialHud() {
             <span aria-hidden="true" className="mr-1 text-foreground/70">
               →
             </span>
-            {clockRate > 1 ? `${clockRate}×` : "Click to adjust"}
+            {clockRate === 0
+              ? "Paused"
+              : clockRate > 1
+                ? `${clockRate}×`
+                : "Click to adjust"}
           </span>
         )}
         <span className="min-w-0 flex-1 truncate text-right font-mono text-xs tabular-nums text-muted-foreground">
@@ -140,7 +144,7 @@ export function CelestialHud() {
                 </span>
               )}
               <span className="text-foreground">
-                {formatClock(now, timeZone, clockRate === 1)}
+                {formatClock(now, timeZone, clockRate <= 1)}
               </span>
               <span className="ml-1.5">{formatZoneAbbrev(now, timeZone)}</span>
             </>
@@ -166,7 +170,7 @@ export function CelestialHud() {
         >
           <div className="flex items-baseline justify-between gap-2">
             <p className="font-mono text-sm tabular-nums text-foreground">
-              {now ? formatClock(now, timeZone, clockRate === 1 && isLive) : "—"}
+              {now ? formatClock(now, timeZone, clockRate <= 1) : "—"}
             </p>
             <p className="text-xs text-muted-foreground">
               {now ? (
@@ -241,14 +245,19 @@ export function CelestialHud() {
                   }}
                 />
                 <ZoneButton
-                  label="3×"
-                  pressed={clockRate === 3}
-                  onClick={() => setClockRate(3)}
+                  label="Pause"
+                  pressed={clockRate === 0}
+                  onClick={() => setClockRate(0)}
                 />
                 <ZoneButton
                   label="10×"
                   pressed={clockRate === 10}
                   onClick={() => setClockRate(10)}
+                />
+                <ZoneButton
+                  label="20×"
+                  pressed={clockRate === 20}
+                  onClick={() => setClockRate(20)}
                 />
                 {seasons.map((mark) => (
                   <ZoneButton

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useAtlas } from "@/lib/atlas-store";
 
-/** 3× / 10× run 3 or 10 minutes of sky per real second. */
+/** 10× / 20× run 10 or 20 minutes of sky per real second. */
 const TICKS_PER_SEC = 12;
 
 export function ClockPlayback() {
@@ -9,7 +9,7 @@ export function ClockPlayback() {
   const timer = useRef<number>(0);
 
   useEffect(() => {
-    if (rate === 1) return;
+    if (rate < 2) return;
     const step = (rate * 60 * 1000) / TICKS_PER_SEC;
     timer.current = window.setInterval(() => {
       useAtlas.setState((s) => ({

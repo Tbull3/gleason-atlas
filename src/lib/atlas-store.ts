@@ -19,7 +19,7 @@ type AtlasState = {
   clockZone: "local" | "central";
   clockOpen: boolean;
   clockMs: number | null;
-  clockRate: 1 | 3 | 10;
+  clockRate: 0 | 1 | 10 | 20;
   viewerPin: { lat: number; lon: number; label: string } | null;
   placingPin: boolean;
   bodyScale: 1 | 10;
@@ -35,7 +35,7 @@ type AtlasState = {
   setClockZone: (clockZone: "local" | "central") => void;
   setClockOpen: (clockOpen: boolean | ((current: boolean) => boolean)) => void;
   setClockMs: (clockMs: number | null) => void;
-  setClockRate: (clockRate: 1 | 3 | 10) => void;
+  setClockRate: (clockRate: 0 | 1 | 10 | 20) => void;
   setViewerPin: (
     pin: { lat: number; lon: number; label: string } | null,
   ) => void;

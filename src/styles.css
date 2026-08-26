@@ -735,6 +735,16 @@
   stroke-width: 3px;
 }
 
+.map-eclipse-label {
+  fill: var(--color-sun);
+  font-size: 9px;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  paint-order: stroke fill;
+  stroke: var(--color-ocean);
+  stroke-width: 3px;
+}
+
 .time-slider {
   display: block;
   width: 100%;

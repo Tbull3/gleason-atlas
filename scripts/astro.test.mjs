@@ -172,3 +172,21 @@ test("lamp is day underfoot and night far from the sun", () => {
   assert.ok(lampRatio(h * 3) < 0.05);
 });
 
+test("stacked sun and moon are a solar eclipse", () => {
+  const STATUTE_PER_GEO = 6080 / 5280;
+  const diameterGeo = 33 / STATUTE_PER_GEO;
+  function colat(lat) {
+    return (90 - lat) * 60;
+  }
+  function discDistance(a, b) {
+    const r1 = colat(a.lat);
+    const r2 = colat(b.lat);
+    const dLon = ((b.lon - a.lon) * Math.PI) / 180;
+    return Math.sqrt(r1 * r1 + r2 * r2 - 2 * r1 * r2 * Math.cos(dLon));
+  }
+  const sun = { lat: 10, lon: -40 };
+  assert.ok(discDistance(sun, sun) < diameterGeo * 0.5);
+  const near = { lat: 10, lon: -40.02 };
+  assert.ok(discDistance(sun, near) < diameterGeo);
+});
+

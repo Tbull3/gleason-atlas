@@ -4,9 +4,10 @@ import { MAP_RADIUS, MAP_SIZE } from "@/lib/geo";
 import { type SkyState } from "@/lib/astro";
 import {
   BODY_ALTITUDE_GEO,
-  BODY_RADIUS_DISPLAY_SVG,
+  BODY_RADIUS_SVG,
   SVG_PER_GEO_MILE,
   formatLonLat,
+  type EclipseKind,
 } from "@/lib/distance";
 
 type MarkProps = {
@@ -14,6 +15,8 @@ type MarkProps = {
   sky: SkyState;
   zoneMeridian: number;
   zoneAbbrev: string;
+  bodyScale: 1 | 10;
+  eclipse: EclipseKind;
 };
 
 export function CelestialBodies({
@@ -21,6 +24,8 @@ export function CelestialBodies({
   sky,
   zoneMeridian,
   zoneAbbrev,
+  bodyScale,
+  eclipse,
 }: MarkProps) {
   const uid = useId().replace(/:/g, "");
   const cx = MAP_SIZE / 2;
@@ -32,6 +37,7 @@ export function CelestialBodies({
   const zoneRim = projection([zoneMeridian, -89.2]);
   const sunNoon = projection([sky.sun.lon, -84]);
   const zoneLabel = projection([zoneMeridian, -84]);
+  const nadirR = Math.max(0.6, BODY_RADIUS_SVG * bodyScale);
   const moonAngle =
     sun && moon
       ? (Math.atan2(sun[1] - moon[1], sun[0] - moon[0]) * 180) / Math.PI
@@ -95,7 +101,7 @@ export function CelestialBodies({
         <circle
           cx={sun[0]}
           cy={sun[1]}
-          r={BODY_RADIUS_DISPLAY_SVG}
+          r={nadirR}
           className="map-sun-nadir"
         />
       )}
@@ -104,10 +110,20 @@ export function CelestialBodies({
           <circle
             cx={moon[0]}
             cy={moon[1]}
-            r={BODY_RADIUS_DISPLAY_SVG}
+            r={nadirR}
             className="map-moon-nadir"
           />
         </g>
+      )}
+      {eclipse && sun && (
+        <text
+          x={sun[0]}
+          y={sun[1] + 14}
+          className="map-eclipse-label"
+          textAnchor="middle"
+        >
+          {eclipse === "total" ? "Eclipse" : "Partial eclipse"}
+        </text>
       )}
       <title>
         {`Sun ${formatLonLat(sky.sun.lon, sky.sun.lat)}; Moon ${formatLonLat(sky.moon.lon, sky.moon.lat)} · ${sky.phaseName} · 33 statute mi across, 3,000 statute mi up`}

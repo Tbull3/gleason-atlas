@@ -172,3 +172,16 @@ export function lampBand(groundGeo: number): "Day" | "Twilight" | "Night" {
 }
 
 export const TROPIC_LAT = 23.44;
+
+export type EclipseKind = "total" | "partial" | null;
+
+/** Sun and moon are the same size, so a stack is a solar eclipse. */
+export function eclipseKind(
+  sun: LonLat,
+  moon: LonLat,
+): EclipseKind {
+  const sep = discDistanceGeo(sun, moon);
+  if (sep <= BODY_DIAMETER_GEO * 0.55) return "total";
+  if (sep <= BODY_DIAMETER_GEO) return "partial";
+  return null;
+}

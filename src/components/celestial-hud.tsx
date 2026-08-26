@@ -1,5 +1,5 @@
-import { useEffect, useId, useMemo, useRef } from "react";
-import { Info, MapPin, Moon, Sun } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Info, Link2, MapPin, Moon, Sun } from "lucide-react";
 import {
   CENTRAL_TZ,
   dayOfYear,
@@ -17,6 +17,7 @@ import {
 import {
   colatitudeGeoMiles,
   discDistanceGeo,
+  eclipseKind,
   formatCount,
   formatGeoMiles,
   formatLonLat,
@@ -35,6 +36,9 @@ export function CelestialHud() {
   const open = useAtlas((s) => s.clockOpen);
   const setOpen = useAtlas((s) => s.setClockOpen);
   const pin = useAtlas((s) => s.viewerPin);
+  const bodyScale = useAtlas((s) => s.bodyScale);
+  const setBodyScale = useAtlas((s) => s.setBodyScale);
+  const [copied, setCopied] = useState(false);
   const localTz = viewerTimeZone();
   const timeZone = clockZone === "central" ? CENTRAL_TZ : localTz;
   const showToggle = localTz !== CENTRAL_TZ;
@@ -64,6 +68,8 @@ export function CelestialHud() {
   const yearLen = parts ? daysInYear(parts.year) : 365;
   const seasons = parts ? seasonMarks(parts.year, timeZone) : [];
 
+  const eclipse = sky ? eclipseKind(sky.sun, sky.moon) : null;
+
   const you = useMemo(() => {
     if (!pin || !sky) return null;
     const ground = discDistanceGeo(pin, sky.sun);
@@ -77,6 +83,20 @@ export function CelestialHud() {
 
   function scrub(next: Date) {
     setClockMs(next.getTime());
+  }
+
+  function copyLink() {
+    if (isLive && now) setClockMs(now.getTime());
+    window.setTimeout(() => {
+      const href = window.location.href;
+      void navigator.clipboard?.writeText(href).then(
+        () => {
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1600);
+        },
+        () => {},
+      );
+    }, 40);
   }
 
   return (
@@ -222,7 +242,11 @@ export function CelestialHud() {
                 icon={Moon}
                 name="Moon"
                 place={formatLonLat(sky.moon.lon, sky.moon.lat)}
-                note={sky.phaseName}
+                note={
+                  eclipse
+                    ? `${sky.phaseName} · ${eclipse === "total" ? "Total eclipse" : "Partial eclipse"}`
+                    : sky.phaseName
+                }
               />
               {you && (
                 <SkyRow
@@ -235,9 +259,24 @@ export function CelestialHud() {
               )}
             </dl>
           )}
-          <p className="mt-2 text-xs text-muted-foreground">
-            33 statute mi across · 3,000 statute mi up
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <p className="text-xs text-muted-foreground">
+              33 statute mi across · 3,000 statute mi up
+            </p>
+            <ZoneButton
+              label={bodyScale === 10 ? "10×" : "True"}
+              pressed={bodyScale === 10}
+              onClick={() => setBodyScale(bodyScale === 10 ? 1 : 10)}
+            />
+            <button
+              type="button"
+              onClick={copyLink}
+              className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-muted-foreground transition-[background-color,color] duration-150 hover:bg-surface-2 hover:text-foreground sm:h-7"
+            >
+              <Link2 className="size-3" />
+              {copied ? "Copied" : "Copy link"}
+            </button>
+          </div>
         </div>
       )}
     </div>

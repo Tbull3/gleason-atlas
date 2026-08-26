@@ -7,6 +7,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAtlas } from "@/lib/atlas-store";
+import { useMarkPlace } from "@/lib/use-mark-place";
 
 type Props = {
   onZoomIn: () => void;
@@ -21,44 +22,8 @@ export function MapControls({ onZoomIn, onZoomOut, onReset }: Props) {
   const measureMode = useAtlas((s) => s.measureMode);
   const setMeasureMode = useAtlas((s) => s.setMeasureMode);
   const setViewMode = useAtlas((s) => s.setViewMode);
-  const viewerPin = useAtlas((s) => s.viewerPin);
-  const placingPin = useAtlas((s) => s.placingPin);
-  const setViewerPin = useAtlas((s) => s.setViewerPin);
-  const setPlacingPin = useAtlas((s) => s.setPlacingPin);
-  const setClockOpen = useAtlas((s) => s.setClockOpen);
+  const { markPlace, viewerPin, placingPin } = useMarkPlace();
   const spatial = viewMode !== "plan";
-
-  function markPlace() {
-    if (placingPin) {
-      setPlacingPin(false);
-      return;
-    }
-    if (viewerPin) {
-      setViewerPin(null);
-      return;
-    }
-    setMeasureMode(false);
-    if (!navigator.geolocation) {
-      setViewMode("plan");
-      setPlacingPin(true);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setViewerPin({
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-          label: "You",
-        });
-        setClockOpen(true);
-      },
-      () => {
-        setViewMode("plan");
-        setPlacingPin(true);
-      },
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
-    );
-  }
 
   function rotateWest() {
     if (spatial) setTurn((t) => t - 18);

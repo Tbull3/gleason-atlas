@@ -21,6 +21,7 @@ type AtlasState = {
   clockMs: number | null;
   viewerPin: { lat: number; lon: number; label: string } | null;
   placingPin: boolean;
+  bodyScale: 1 | 10;
   setMetric: (metric: MetricId) => void;
   setSelectedKey: (selectedKey: string | null) => void;
   setHoveredKey: (hoveredKey: string | null) => void;
@@ -37,6 +38,16 @@ type AtlasState = {
     pin: { lat: number; lon: number; label: string } | null,
   ) => void;
   setPlacingPin: (placingPin: boolean) => void;
+  setBodyScale: (bodyScale: 1 | 10) => void;
+  applyShare: (snap: {
+    t?: number | null;
+    v?: ViewMode;
+    c?: string | null;
+    pin?: { lat: number; lon: number } | null;
+    m?: MetricId;
+    s?: 1 | 10;
+    z?: "local" | "central";
+  }) => void;
 };
 
 export const useAtlas = create<AtlasState>((set) => ({
@@ -54,6 +65,7 @@ export const useAtlas = create<AtlasState>((set) => ({
   clockMs: null,
   viewerPin: null,
   placingPin: false,
+  bodyScale: 10,
   setMetric: (metric) => set({ metric }),
   setSelectedKey: (selectedKey) => set({ selectedKey }),
   setHoveredKey: (hoveredKey) => set({ hoveredKey }),
@@ -94,6 +106,25 @@ export const useAtlas = create<AtlasState>((set) => ({
   setClockMs: (clockMs) => set({ clockMs }),
   setViewerPin: (viewerPin) => set({ viewerPin, placingPin: false }),
   setPlacingPin: (placingPin) => set({ placingPin }),
+  setBodyScale: (bodyScale) => set({ bodyScale }),
+  applyShare: (snap) =>
+    set((s) => ({
+      clockMs: snap.t !== undefined ? snap.t : s.clockMs,
+      viewMode: snap.v ?? s.viewMode,
+      selectedKey: snap.c !== undefined ? snap.c : s.selectedKey,
+      focusToken: snap.c ? s.focusToken + 1 : s.focusToken,
+      viewerPin:
+        snap.pin === undefined
+          ? s.viewerPin
+          : snap.pin
+            ? { ...snap.pin, label: "You" }
+            : null,
+      metric: snap.m ?? s.metric,
+      bodyScale: snap.s ?? s.bodyScale,
+      clockZone: snap.z ?? s.clockZone,
+      measureMode: snap.v && snap.v !== "plan" ? false : s.measureMode,
+      placingPin: false,
+    })),
   focusCountry: (key) =>
     set((s) => ({
       selectedKey: key,

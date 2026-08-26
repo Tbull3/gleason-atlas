@@ -52,8 +52,8 @@ import {
   formatCount,
   BODY_ALTITUDE_GEO,
   BODY_DIAMETER_GEO,
-  BODY_DISPLAY_SCALE,
   DISC_GEO_MILES,
+  eclipseKind,
   type MeasurePoint,
 } from "@/lib/distance";
 import {
@@ -145,6 +145,7 @@ export function GleasonMap() {
   const setClockOpen = useAtlas((s) => s.setClockOpen);
   const placingPinRef = useRef(placingPin);
   placingPinRef.current = placingPin;
+  const bodyScale = useAtlas((s) => s.bodyScale);
 
   viewModeRef.current = viewMode;
   if (!dragRef.current) {
@@ -289,7 +290,7 @@ export function GleasonMap() {
       );
       board.style.setProperty(
         "--body-d",
-        `${Math.max(2, r * (BODY_DIAMETER_GEO / DISC_GEO_MILES) * BODY_DISPLAY_SCALE)}px`,
+        `${Math.max(bodyScale === 1 ? 1 : 2, r * (BODY_DIAMETER_GEO / DISC_GEO_MILES) * bodyScale)}px`,
       );
       board.style.setProperty(
         "--rim-seg-w",
@@ -301,7 +302,7 @@ export function GleasonMap() {
     const ro = new ResizeObserver(syncSize);
     ro.observe(board);
     return () => ro.disconnect();
-  }, []);
+  }, [bodyScale]);
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -719,6 +720,8 @@ export function GleasonMap() {
                         sky={sky}
                         zoneMeridian={civilMeridian}
                         zoneAbbrev={zoneAbbrev}
+                        bodyScale={bodyScale}
+                        eclipse={eclipseKind(sky.sun, sky.moon)}
                       />
                     )}
                     {youPt && sunNadir && (

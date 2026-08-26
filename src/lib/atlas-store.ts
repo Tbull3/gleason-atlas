@@ -18,6 +18,9 @@ type AtlasState = {
   measureMode: boolean;
   clockZone: "local" | "central";
   clockOpen: boolean;
+  clockMs: number | null;
+  viewerPin: { lat: number; lon: number; label: string } | null;
+  placingPin: boolean;
   setMetric: (metric: MetricId) => void;
   setSelectedKey: (selectedKey: string | null) => void;
   setHoveredKey: (hoveredKey: string | null) => void;
@@ -29,6 +32,11 @@ type AtlasState = {
   setMeasureMode: (measureMode: boolean | ((current: boolean) => boolean)) => void;
   setClockZone: (clockZone: "local" | "central") => void;
   setClockOpen: (clockOpen: boolean | ((current: boolean) => boolean)) => void;
+  setClockMs: (clockMs: number | null) => void;
+  setViewerPin: (
+    pin: { lat: number; lon: number; label: string } | null,
+  ) => void;
+  setPlacingPin: (placingPin: boolean) => void;
 };
 
 export const useAtlas = create<AtlasState>((set) => ({
@@ -43,6 +51,9 @@ export const useAtlas = create<AtlasState>((set) => ({
   measureMode: false,
   clockZone: "local",
   clockOpen: false,
+  clockMs: null,
+  viewerPin: null,
+  placingPin: false,
   setMetric: (metric) => set({ metric }),
   setSelectedKey: (selectedKey) => set({ selectedKey }),
   setHoveredKey: (hoveredKey) => set({ hoveredKey }),
@@ -56,6 +67,7 @@ export const useAtlas = create<AtlasState>((set) => ({
     set((s) => ({
       viewMode,
       measureMode: viewMode === "plan" ? s.measureMode : false,
+      placingPin: viewMode === "plan" ? s.placingPin : false,
     })),
   setTurn: (turn) =>
     set((s) => ({
@@ -63,18 +75,25 @@ export const useAtlas = create<AtlasState>((set) => ({
     })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setMeasureMode: (measureMode) =>
-    set((s) => ({
-      measureMode:
+    set((s) => {
+      const next =
         typeof measureMode === "function"
           ? measureMode(s.measureMode)
-          : measureMode,
-    })),
+          : measureMode;
+      return {
+        measureMode: next,
+        placingPin: next ? false : s.placingPin,
+      };
+    }),
   setClockZone: (clockZone) => set({ clockZone }),
   setClockOpen: (clockOpen) =>
     set((s) => ({
       clockOpen:
         typeof clockOpen === "function" ? clockOpen(s.clockOpen) : clockOpen,
     })),
+  setClockMs: (clockMs) => set({ clockMs }),
+  setViewerPin: (viewerPin) => set({ viewerPin, placingPin: false }),
+  setPlacingPin: (placingPin) => set({ placingPin }),
   focusCountry: (key) =>
     set((s) => ({
       selectedKey: key,

@@ -1,35 +1,45 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Info, Moon, Sun } from "lucide-react";
+import { useEffect, useId, useMemo, useRef } from "react";
+import { Info, MapPin, Moon, Sun } from "lucide-react";
 import {
   CENTRAL_TZ,
+  dayOfYear,
+  daysInYear,
   formatClock,
+  formatClockDate,
   formatZoneAbbrev,
   formatZoneLabel,
-  skyAt,
+  seasonMarks,
+  setZonedDayOfYear,
+  setZonedMinutes,
   viewerTimeZone,
+  zonedParts,
 } from "@/lib/astro";
-import { colatitudeGeoMiles, formatGeoMiles, formatLonLat } from "@/lib/distance";
+import {
+  colatitudeGeoMiles,
+  discDistanceGeo,
+  formatCount,
+  formatGeoMiles,
+  formatLonLat,
+  lampBand,
+  slantStatuteMiles,
+} from "@/lib/distance";
 import { useAtlas } from "@/lib/atlas-store";
+import { useSkyNow } from "@/lib/use-sky-clock";
 import { cn } from "@/lib/utils";
 
 export function CelestialHud() {
-  const [now, setNow] = useState<Date | null>(null);
+  const { now, sky, isLive } = useSkyNow();
   const clockZone = useAtlas((s) => s.clockZone);
   const setClockZone = useAtlas((s) => s.setClockZone);
+  const setClockMs = useAtlas((s) => s.setClockMs);
   const open = useAtlas((s) => s.clockOpen);
   const setOpen = useAtlas((s) => s.setClockOpen);
+  const pin = useAtlas((s) => s.viewerPin);
   const localTz = viewerTimeZone();
   const timeZone = clockZone === "central" ? CENTRAL_TZ : localTz;
   const showToggle = localTz !== CENTRAL_TZ;
-  const sky = useMemo(() => (now ? skyAt(now) : null), [now]);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setNow(new Date());
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -48,13 +58,41 @@ export function CelestialHud() {
     };
   }, [open, setOpen]);
 
+  const parts = now ? zonedParts(now, timeZone) : null;
+  const minuteOfDay = parts ? parts.hour * 60 + parts.minute : 0;
+  const doy = now ? dayOfYear(now, timeZone) : 0;
+  const yearLen = parts ? daysInYear(parts.year) : 365;
+  const seasons = parts ? seasonMarks(parts.year, timeZone) : [];
+
+  const you = useMemo(() => {
+    if (!pin || !sky) return null;
+    const ground = discDistanceGeo(pin, sky.sun);
+    return {
+      place: formatLonLat(pin.lon, pin.lat),
+      band: lampBand(ground),
+      ground,
+      slant: slantStatuteMiles(ground),
+    };
+  }, [pin, sky]);
+
+  function scrub(next: Date) {
+    setClockMs(next.getTime());
+  }
+
   return (
     <div ref={rootRef} className="relative mt-1">
       <div className="flex items-center gap-1 pl-0.5">
         <p className="min-w-0 flex-1 truncate font-mono text-xs tabular-nums text-muted-foreground">
           {now ? (
             <>
-              <span className="text-foreground">{formatClock(now, timeZone)}</span>
+              {!isLive && (
+                <span className="mr-1.5 text-foreground">
+                  {formatClockDate(now, timeZone)}
+                </span>
+              )}
+              <span className="text-foreground">
+                {formatClock(now, timeZone, isLive)}
+              </span>
               <span className="ml-1.5">{formatZoneAbbrev(now, timeZone)}</span>
             </>
           ) : (
@@ -82,14 +120,21 @@ export function CelestialHud() {
           id={panelId}
           role="region"
           aria-label="Sun and moon"
-          className="absolute top-[calc(100%+6px)] right-0 left-0 z-30 rounded-lg border border-border bg-surface px-3 py-2.5 shadow-sm"
+          className="absolute top-[calc(100%+6px)] right-0 left-0 z-30 max-h-[min(52dvh,22rem)] overflow-y-auto rounded-lg border border-border bg-surface px-3 py-2.5 shadow-sm"
         >
           <div className="flex items-baseline justify-between gap-2">
             <p className="font-mono text-sm tabular-nums text-foreground">
-              {now ? formatClock(now, timeZone) : "—"}
+              {now ? formatClock(now, timeZone, isLive) : "—"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {now ? formatZoneAbbrev(now, timeZone) : ""}
+              {now ? (
+                <>
+                  {formatClockDate(now, timeZone)}{" "}
+                  {formatZoneAbbrev(now, timeZone)}
+                </>
+              ) : (
+                ""
+              )}
             </p>
           </div>
           {showToggle && (
@@ -110,6 +155,61 @@ export function CelestialHud() {
               />
             </div>
           )}
+          {now && (
+            <div className="mt-2 space-y-2">
+              <label className="block">
+                <span className="text-xs text-muted-foreground">Hour</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1439}
+                  step={1}
+                  value={minuteOfDay}
+                  aria-label="Hour of day"
+                  className="time-slider mt-1"
+                  onChange={(e) =>
+                    scrub(setZonedMinutes(now, timeZone, Number(e.target.value)))
+                  }
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs text-muted-foreground">Day of year</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={yearLen - 1}
+                  step={1}
+                  value={doy}
+                  aria-label="Day of year"
+                  className="time-slider mt-1"
+                  onChange={(e) =>
+                    scrub(
+                      setZonedDayOfYear(now, timeZone, Number(e.target.value)),
+                    )
+                  }
+                />
+              </label>
+              <div className="flex flex-wrap gap-0.5">
+                <ZoneButton
+                  label="Now"
+                  pressed={isLive}
+                  onClick={() => setClockMs(null)}
+                />
+                {seasons.map((mark) => (
+                  <ZoneButton
+                    key={mark.id}
+                    label={mark.short}
+                    pressed={
+                      !isLive &&
+                      formatClockDate(now, timeZone) ===
+                        formatClockDate(mark.date, timeZone)
+                    }
+                    onClick={() => scrub(mark.date)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
           {sky && (
             <dl className="mt-2 space-y-1.5">
               <SkyRow
@@ -117,17 +217,27 @@ export function CelestialHud() {
                 name="Sun"
                 place={formatLonLat(sky.sun.lon, sky.sun.lat)}
                 note={`${formatGeoMiles(colatitudeGeoMiles(sky.sun.lat))} from the pole`}
-                spec="33 statute mi across · 3,000 statute mi up"
               />
               <SkyRow
                 icon={Moon}
                 name="Moon"
                 place={formatLonLat(sky.moon.lon, sky.moon.lat)}
                 note={sky.phaseName}
-                spec="33 statute mi across · 3,000 statute mi up"
               />
+              {you && (
+                <SkyRow
+                  icon={MapPin}
+                  name="You"
+                  place={you.place}
+                  note={`${you.band} · ${formatGeoMiles(you.ground)} to the sun`}
+                  spec={`${formatCount(you.slant)} statute mi slant`}
+                />
+              )}
             </dl>
           )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            33 statute mi across · 3,000 statute mi up
+          </p>
         </div>
       )}
     </div>

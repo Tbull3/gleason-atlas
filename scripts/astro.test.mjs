@@ -135,3 +135,40 @@ test("sun and moon are 33 statute miles across, 3,000 miles up on the Gleason sc
   assert.ok(display > 8 && display < 14, `10× body is ${display} svg units`);
 });
 
+test("Gleason disc distance: pole to equator is 5,400 geo miles", () => {
+  const GEO = 60;
+  function colat(lat) {
+    return (90 - lat) * GEO;
+  }
+  function discDistance(a, b) {
+    const r1 = colat(a.lat);
+    const r2 = colat(b.lat);
+    const dLon = ((b.lon - a.lon) * Math.PI) / 180;
+    return Math.sqrt(r1 * r1 + r2 * r2 - 2 * r1 * r2 * Math.cos(dLon));
+  }
+  assert.equal(discDistance({ lat: 90, lon: 0 }, { lat: 0, lon: 0 }), 5400);
+  assert.ok(discDistance({ lat: 0, lon: 0 }, { lat: 0, lon: 0 }) < 1e-9);
+});
+
+test("solar-time ring: noon at Greenwich, 18h at 90°W", () => {
+  function hourMeridian(hour) {
+    return wrapLon((12 - hour) * 15);
+  }
+  assert.equal(hourMeridian(12), 0);
+  assert.equal(hourMeridian(18), -90);
+  assert.equal(Math.abs(hourMeridian(0)), 180);
+  assert.equal(hourMeridian(6), 90);
+});
+
+test("lamp is day underfoot and night far from the sun", () => {
+  const STATUTE_PER_GEO = 6080 / 5280;
+  const h = 3000 / STATUTE_PER_GEO;
+  function lampRatio(groundGeo) {
+    const r2 = h * h + groundGeo * groundGeo;
+    return (h * h * h) / Math.pow(r2, 1.5);
+  }
+  assert.ok(Math.abs(lampRatio(0) - 1) < 1e-9);
+  assert.ok(lampRatio(h) > 0.3 && lampRatio(h) < 0.4);
+  assert.ok(lampRatio(h * 3) < 0.05);
+});
+

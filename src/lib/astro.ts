@@ -275,14 +275,173 @@ export function zoneMeridian(date: Date, timeZone: string) {
   return wrapLon(zoneOffsetHours(date, timeZone) * 15);
 }
 
-export function formatClock(date: Date, timeZone: string) {
+export function formatClock(date: Date, timeZone: string, withSeconds = true) {
   return new Intl.DateTimeFormat("en-US", {
     timeZone,
     hour: "numeric",
     minute: "2-digit",
-    second: "2-digit",
+    ...(withSeconds ? { second: "2-digit" as const } : {}),
     hourCycle: "h12",
   }).format(date);
+}
+
+export function formatClockDate(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+export type ZonedParts = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+};
+
+export function zonedParts(date: Date, timeZone: string): ZonedParts {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+  const parts = Object.fromEntries(
+    fmt.formatToParts(date).map((p) => [p.type, p.value]),
+  );
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+    second: Number(parts.second),
+  };
+}
+
+export function dateFromZoned(parts: ZonedParts, timeZone: string): Date {
+  const utcGuess = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  );
+  let date = new Date(utcGuess);
+  for (let i = 0; i < 3; i++) {
+    const off = zoneOffsetHours(date, timeZone);
+    date = new Date(utcGuess - off * 3600000);
+  }
+  return date;
+}
+
+export function dayOfYear(date: Date, timeZone: string) {
+  const p = zonedParts(date, timeZone);
+  const start = Date.UTC(p.year, 0, 1);
+  const cur = Date.UTC(p.year, p.month - 1, p.day);
+  return Math.round((cur - start) / 86400000);
+}
+
+export function daysInYear(year: number) {
+  return year % 400 === 0 || (year % 4 === 0 && year % 100 !== 0) ? 366 : 365;
+}
+
+export function setZonedDayOfYear(
+  date: Date,
+  timeZone: string,
+  doy: number,
+) {
+  const p = zonedParts(date, timeZone);
+  const jan1 = new Date(Date.UTC(p.year, 0, 1 + doy));
+  return dateFromZoned(
+    {
+      year: p.year,
+      month: jan1.getUTCMonth() + 1,
+      day: jan1.getUTCDate(),
+      hour: p.hour,
+      minute: p.minute,
+      second: p.second,
+    },
+    timeZone,
+  );
+}
+
+export function setZonedMinutes(
+  date: Date,
+  timeZone: string,
+  minutes: number,
+) {
+  const p = zonedParts(date, timeZone);
+  const wrapped = ((minutes % 1440) + 1440) % 1440;
+  return dateFromZoned(
+    {
+      ...p,
+      hour: Math.floor(wrapped / 60),
+      minute: wrapped % 60,
+      second: 0,
+    },
+    timeZone,
+  );
+}
+
+export type SeasonMark = {
+  id: string;
+  short: string;
+  label: string;
+  date: Date;
+};
+
+export function seasonMarks(year: number, timeZone: string): SeasonMark[] {
+  return [
+    {
+      id: "mar",
+      short: "Mar",
+      label: "March equinox",
+      date: dateFromZoned(
+        { year, month: 3, day: 20, hour: 12, minute: 0, second: 0 },
+        timeZone,
+      ),
+    },
+    {
+      id: "jun",
+      short: "Jun",
+      label: "June solstice",
+      date: dateFromZoned(
+        { year, month: 6, day: 21, hour: 12, minute: 0, second: 0 },
+        timeZone,
+      ),
+    },
+    {
+      id: "sep",
+      short: "Sep",
+      label: "September equinox",
+      date: dateFromZoned(
+        { year, month: 9, day: 22, hour: 12, minute: 0, second: 0 },
+        timeZone,
+      ),
+    },
+    {
+      id: "dec",
+      short: "Dec",
+      label: "December solstice",
+      date: dateFromZoned(
+        { year, month: 12, day: 21, hour: 12, minute: 0, second: 0 },
+        timeZone,
+      ),
+    },
+  ];
+}
+
+export function hourMeridian(hour: number) {
+  return wrapLon((12 - hour) * 15);
 }
 
 export function formatZoneAbbrev(date: Date, timeZone: string) {

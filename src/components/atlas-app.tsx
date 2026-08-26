@@ -115,8 +115,12 @@ function AboutDialog() {
             across and 3,000 statute miles above the disc (drawn 10× so
             they read on the map). The sun is a lamp: light falls off
             with distance from the overhead point, so day is a pool
-            around the sun and night gathers toward the ice. Switch to a
-            side view for the height and the cone. The solid arm is solar
+            around the sun and night gathers toward the ice. Open the clock
+            under Search to scrub the hour and the year — Now, the
+            equinoxes, and the solstices are pins. Mark your place (or
+            click the disc) to read day, twilight, or night and the slant
+            range up to the lamp. Hours around the ice are solar time;
+            June and December sit on the tropics. The solid arm is solar
             noon; the dashed arm is your civil meridian. The clock
             follows the viewer’s timezone, with Central as a pin.
           </p>

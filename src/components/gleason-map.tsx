@@ -43,6 +43,8 @@ import { DiskRim } from "@/components/disk-rim";
 import { GleasonMarks } from "@/components/gleason-marks";
 import { DistanceHud } from "@/components/distance-hud";
 import { CelestialBodies, CelestialOrbs } from "@/components/celestial-bodies";
+import { TimeRing } from "@/components/time-ring";
+import { useSkyNow } from "@/lib/use-sky-clock";
 import {
   invertLonLat,
   projectMeasure,
@@ -57,7 +59,6 @@ import {
 import {
   CENTRAL_TZ,
   formatZoneAbbrev,
-  skyAt,
   viewerTimeZone,
   zoneMeridian,
 } from "@/lib/astro";
@@ -119,7 +120,7 @@ export function GleasonMap() {
   const [tooltip, setTooltip] = useState<TooltipState>(null);
   const [measureA, setMeasureA] = useState<MeasurePoint | null>(null);
   const [measureB, setMeasureB] = useState<MeasurePoint | null>(null);
-  const [now, setNow] = useState<Date | null>(null);
+  const { now, sky } = useSkyNow();
   const measureARef = useRef<MeasurePoint | null>(null);
   const measureBRef = useRef<MeasurePoint | null>(null);
 
@@ -137,12 +138,13 @@ export function GleasonMap() {
   const measureModeRef = useRef(measureMode);
   measureModeRef.current = measureMode;
   const clockZone = useAtlas((s) => s.clockZone);
-
-  useEffect(() => {
-    setNow(new Date());
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
+  const viewerPin = useAtlas((s) => s.viewerPin);
+  const placingPin = useAtlas((s) => s.placingPin);
+  const setViewerPin = useAtlas((s) => s.setViewerPin);
+  const setPlacingPin = useAtlas((s) => s.setPlacingPin);
+  const setClockOpen = useAtlas((s) => s.setClockOpen);
+  const placingPinRef = useRef(placingPin);
+  placingPinRef.current = placingPin;
 
   viewModeRef.current = viewMode;
   if (!dragRef.current) {
@@ -245,7 +247,7 @@ export function GleasonMap() {
       .filter((event) => {
         if (viewModeRef.current !== "plan") return false;
         if ("button" in event && event.button) return false;
-        if (measureModeRef.current) {
+        if (measureModeRef.current || placingPinRef.current) {
           const type = event.type;
           if (type === "mousedown" || type === "touchstart") return false;
         }
@@ -375,6 +377,7 @@ export function GleasonMap() {
         setMeasureB(null);
         measureARef.current = null;
         measureBRef.current = null;
+        setPlacingPin(false);
       }
       if (viewModeRef.current === "plan") return;
       if (event.key === "ArrowLeft") {
@@ -388,7 +391,7 @@ export function GleasonMap() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [setSelectedKey, setTurn]);
+  }, [setSelectedKey, setTurn, setPlacingPin]);
 
   function resetD3() {
     const svgEl = svgRef.current;
@@ -457,7 +460,7 @@ export function GleasonMap() {
 
   const onEnter = useCallback(
     (event: MouseEvent<SVGPathElement>, country: DrawnCountry) => {
-      if (measureModeRef.current) return;
+      if (measureModeRef.current || placingPinRef.current) return;
       if (dragRef.current?.moved) return;
       setHoveredKey(country.key);
       showTip(event, country);
@@ -467,7 +470,7 @@ export function GleasonMap() {
 
   const onMove = useCallback(
     (event: MouseEvent<SVGPathElement>, country: DrawnCountry) => {
-      if (measureModeRef.current) return;
+      if (measureModeRef.current || placingPinRef.current) return;
       if (dragRef.current?.moved) return;
       showTip(event, country);
     },
@@ -485,7 +488,7 @@ export function GleasonMap() {
         suppressClickRef.current = false;
         return;
       }
-      if (measureModeRef.current) return;
+      if (measureModeRef.current || placingPinRef.current) return;
       setSelectedKey(active ? null : key);
     },
     [setSelectedKey],
@@ -505,6 +508,19 @@ export function GleasonMap() {
     const dy = y - MAP_SIZE / 2;
     if (Math.hypot(dx, dy) > MAP_RADIUS + 4) return null;
     return [x, y];
+  }
+
+  function placePin(event: { clientX: number; clientY: number }) {
+    if (!placingPinRef.current) return false;
+    if (viewModeRef.current !== "plan") return false;
+    const xy = clientToDisc(event);
+    if (!xy) return false;
+    const ll = invertLonLat(projection, xy[0], xy[1]);
+    if (!ll) return false;
+    setViewerPin({ lat: ll.lat, lon: ll.lon, label: "You" });
+    setPlacingPin(false);
+    setClockOpen(true);
+    return true;
   }
 
   function placeMeasure(event: { clientX: number; clientY: number }) {
@@ -585,10 +601,13 @@ export function GleasonMap() {
   const drawnB = measureB ? projectMeasure(projection, measureB) : null;
   const drawnMeasure =
     drawnA && drawnB ? discMeasure(drawnA, drawnB) : null;
-  const sky = useMemo(() => (now ? skyAt(now) : null), [now]);
   const timeZone = clockZone === "central" ? CENTRAL_TZ : viewerTimeZone();
   const civilMeridian = now ? zoneMeridian(now, timeZone) : 0;
   const zoneAbbrev = now ? formatZoneAbbrev(now, timeZone) : "";
+  const youPt = viewerPin
+    ? projection([viewerPin.lon, viewerPin.lat])
+    : null;
+  const sunNadir = sky ? projection([sky.sun.lon, sky.sun.lat]) : null;
 
   return (
     <div
@@ -596,6 +615,7 @@ export function GleasonMap() {
       className="map-viewport"
       data-view={viewMode}
       data-measure={measureMode ? "true" : undefined}
+      data-place={placingPin ? "true" : undefined}
       onPointerDown={onStagePointerDown}
       onPointerMove={onStagePointerMove}
       onPointerUp={onStagePointerUp}
@@ -616,7 +636,7 @@ export function GleasonMap() {
                   className={
                     spatial
                       ? "h-full w-full touch-none"
-                      : measureMode
+                      : measureMode || placingPin
                         ? "h-full w-full cursor-crosshair touch-none"
                         : "h-full w-full cursor-grab touch-none active:cursor-grabbing"
                   }
@@ -625,7 +645,7 @@ export function GleasonMap() {
                   onDoubleClick={resetView}
                   onClickCapture={(e) => {
                     if (suppressClickRef.current) return;
-                    if (placeMeasure(e)) {
+                    if (placePin(e) || placeMeasure(e)) {
                       e.stopPropagation();
                     }
                   }}
@@ -634,7 +654,7 @@ export function GleasonMap() {
                       suppressClickRef.current = false;
                       return;
                     }
-                    if (measureMode) return;
+                    if (measureMode || placingPin) return;
                     if (e.target === e.currentTarget) setSelectedKey(null);
                   }}
                 >
@@ -692,6 +712,7 @@ export function GleasonMap() {
                       onLeave={onLeave}
                       onSelect={onSelect}
                     />
+                    <TimeRing projection={projection} />
                     {sky && (
                       <CelestialBodies
                         projection={projection}
@@ -699,6 +720,39 @@ export function GleasonMap() {
                         zoneMeridian={civilMeridian}
                         zoneAbbrev={zoneAbbrev}
                       />
+                    )}
+                    {youPt && sunNadir && (
+                      <line
+                        x1={youPt[0]}
+                        y1={youPt[1]}
+                        x2={sunNadir[0]}
+                        y2={sunNadir[1]}
+                        className="map-you-ray"
+                      />
+                    )}
+                    {youPt && (
+                      <g pointerEvents="none">
+                        <circle
+                          cx={youPt[0]}
+                          cy={youPt[1]}
+                          r={8}
+                          className="map-you-ring"
+                        />
+                        <circle
+                          cx={youPt[0]}
+                          cy={youPt[1]}
+                          r={3.4}
+                          className="map-you-dot"
+                        />
+                        <text
+                          x={youPt[0]}
+                          y={youPt[1] - 12}
+                          className="map-you-label"
+                          textAnchor="middle"
+                        >
+                          You
+                        </text>
+                      </g>
                     )}
                     {measureMode && <GleasonMarks projection={projection} />}
                     {drawnA && (

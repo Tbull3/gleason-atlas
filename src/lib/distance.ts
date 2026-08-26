@@ -144,3 +144,31 @@ export function discMeasure(a: MeasurePoint, b: MeasurePoint) {
     fromPoleB: colatitudeGeoMiles(b.lat),
   };
 }
+
+/** Flat-disc distance (law of cosines on polar radii). */
+export function discDistanceGeo(a: LonLat, b: LonLat) {
+  const r1 = colatitudeGeoMiles(a.lat);
+  const r2 = colatitudeGeoMiles(b.lat);
+  const dLon = ((b.lon - a.lon) * Math.PI) / 180;
+  return Math.sqrt(r1 * r1 + r2 * r2 - 2 * r1 * r2 * Math.cos(dLon));
+}
+
+export function slantStatuteMiles(groundGeo: number) {
+  return Math.hypot(groundGeo * STATUTE_PER_GEO, BODY_ALTITUDE_STATUTE);
+}
+
+/** Inverse-square × cosine incidence from a lamp at BODY_ALTITUDE. */
+export function lampRatio(groundGeo: number) {
+  const h = BODY_ALTITUDE_GEO;
+  const r2 = h * h + groundGeo * groundGeo;
+  return (h * h * h) / Math.pow(r2, 1.5);
+}
+
+export function lampBand(groundGeo: number): "Day" | "Twilight" | "Night" {
+  const r = lampRatio(groundGeo);
+  if (r >= 0.22) return "Day";
+  if (r >= 0.05) return "Twilight";
+  return "Night";
+}
+
+export const TROPIC_LAT = 23.44;

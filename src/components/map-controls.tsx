@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Minus, Plus, RotateCcw, RotateCw, Maximize2, Ruler } from "lucide-react";
+import { Minus, Plus, RotateCcw, RotateCw, Maximize2, Ruler, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -21,7 +21,44 @@ export function MapControls({ onZoomIn, onZoomOut, onReset }: Props) {
   const measureMode = useAtlas((s) => s.measureMode);
   const setMeasureMode = useAtlas((s) => s.setMeasureMode);
   const setViewMode = useAtlas((s) => s.setViewMode);
+  const viewerPin = useAtlas((s) => s.viewerPin);
+  const placingPin = useAtlas((s) => s.placingPin);
+  const setViewerPin = useAtlas((s) => s.setViewerPin);
+  const setPlacingPin = useAtlas((s) => s.setPlacingPin);
+  const setClockOpen = useAtlas((s) => s.setClockOpen);
   const spatial = viewMode !== "plan";
+
+  function markPlace() {
+    if (placingPin) {
+      setPlacingPin(false);
+      return;
+    }
+    if (viewerPin) {
+      setViewerPin(null);
+      return;
+    }
+    setMeasureMode(false);
+    if (!navigator.geolocation) {
+      setViewMode("plan");
+      setPlacingPin(true);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setViewerPin({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          label: "You",
+        });
+        setClockOpen(true);
+      },
+      () => {
+        setViewMode("plan");
+        setPlacingPin(true);
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+    );
+  }
 
   function rotateWest() {
     if (spatial) setTurn((t) => t - 18);
@@ -56,6 +93,19 @@ export function MapControls({ onZoomIn, onZoomOut, onReset }: Props) {
         pressed={measureMode}
       >
         <Ruler />
+      </Control>
+      <Control
+        label={
+          placingPin
+            ? "Click the disc to place yourself"
+            : viewerPin
+              ? "Clear my place"
+              : "Mark my place"
+        }
+        onClick={markPlace}
+        pressed={placingPin || Boolean(viewerPin)}
+      >
+        <MapPin />
       </Control>
       <Control
         label={spatial ? "Turn west" : "Rotate west"}

@@ -101,40 +101,53 @@ export function CelestialHud() {
 
   return (
     <div ref={rootRef} className="relative mt-1">
-      <div className="flex items-center gap-1 pl-0.5">
-        <p className="min-w-0 flex-1 truncate font-mono text-xs tabular-nums text-muted-foreground">
-          {now ? (
-            <>
-              {!isLive && (
-                <span className="mr-1.5 text-foreground">
-                  {formatClockDate(now, timeZone)}
+      <button
+        type="button"
+        aria-label={open ? "Hide time and sky controls" : "Adjust time, sun and moon"}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "flex w-full items-start gap-1 rounded-md py-0.5 pl-0.5 pr-0 text-left transition-[background-color,color] duration-150 ease-smooth-out",
+          open ? "text-foreground" : "hover:bg-surface-2/60",
+        )}
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-mono text-xs tabular-nums text-muted-foreground">
+            {now ? (
+              <>
+                {!isLive && (
+                  <span className="mr-1.5 text-foreground">
+                    {formatClockDate(now, timeZone)}
+                  </span>
+                )}
+                <span className="text-foreground">
+                  {formatClock(now, timeZone, isLive)}
                 </span>
-              )}
-              <span className="text-foreground">
-                {formatClock(now, timeZone, isLive)}
+                <span className="ml-1.5">{formatZoneAbbrev(now, timeZone)}</span>
+              </>
+            ) : (
+              "—"
+            )}
+          </span>
+          {!open && (
+            <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              Click to adjust time
+              <span aria-hidden="true" className="text-foreground/70">
+                →
               </span>
-              <span className="ml-1.5">{formatZoneAbbrev(now, timeZone)}</span>
-            </>
-          ) : (
-            "—"
+            </span>
           )}
-        </p>
-        <button
-          type="button"
-          aria-label={open ? "Hide sun and moon details" : "Sun and moon details"}
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => setOpen((v) => !v)}
+        </span>
+        <span
           className={cn(
-            "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-[background-color,color] duration-150 ease-smooth-out",
-            open
-              ? "bg-surface-2 text-foreground"
-              : "hover:bg-surface-2 hover:text-foreground",
+            "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground",
+            open && "bg-surface-2 text-foreground",
           )}
         >
           <Info className="size-3.5" />
-        </button>
-      </div>
+        </span>
+      </button>
       {open && (
         <div
           id={panelId}

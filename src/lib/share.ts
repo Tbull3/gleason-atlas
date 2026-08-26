@@ -17,8 +17,9 @@ export function parseShareHash(hash: string): Partial<ShareSnapshot> {
   const q = new URLSearchParams(raw);
   const out: Partial<ShareSnapshot> = {};
   const t = q.get("t");
-  if (t === "now") out.t = null;
-  else if (t) {
+  const shared = q.get("share") === "1";
+  if (shared && t === "now") out.t = null;
+  else if (shared && t) {
     const ms = t.endsWith("Z") || t.includes("T") ? Date.parse(t) : Number(t);
     if (Number.isFinite(ms)) out.t = ms;
   }
@@ -46,7 +47,10 @@ export function parseShareHash(hash: string): Partial<ShareSnapshot> {
 
 export function toShareHash(snap: ShareSnapshot) {
   const q = new URLSearchParams();
-  if (snap.t != null) q.set("t", new Date(snap.t).toISOString().replace(/\.\d{3}Z$/, "Z"));
+  if (snap.t != null) {
+    q.set("t", new Date(snap.t).toISOString().replace(/\.\d{3}Z$/, "Z"));
+    q.set("share", "1");
+  }
   if (snap.v !== "plan") q.set("v", snap.v);
   if (snap.c) q.set("c", snap.c);
   if (snap.pin) {

@@ -26,6 +26,7 @@ import {
 } from "@/lib/distance";
 import { useAtlas } from "@/lib/atlas-store";
 import { useSkyNow } from "@/lib/use-sky-clock";
+import { toShareHash } from "@/lib/share";
 import { cn } from "@/lib/utils";
 
 export function CelestialHud() {
@@ -86,17 +87,25 @@ export function CelestialHud() {
   }
 
   function copyLink() {
-    if (isLive && now) setClockMs(now.getTime());
-    window.setTimeout(() => {
-      const href = window.location.href;
-      void navigator.clipboard?.writeText(href).then(
-        () => {
-          setCopied(true);
-          window.setTimeout(() => setCopied(false), 1600);
-        },
-        () => {},
-      );
-    }, 40);
+    if (!now) return;
+    const url = new URL(window.location.href);
+    const hash = toShareHash({
+      t: now.getTime(),
+      v: useAtlas.getState().viewMode,
+      c: useAtlas.getState().selectedKey,
+      pin: pin,
+      m: useAtlas.getState().metric,
+      s: bodyScale,
+      z: clockZone,
+    });
+    url.hash = hash.startsWith("#") ? hash.slice(1) : hash;
+    void navigator.clipboard?.writeText(url.toString()).then(
+      () => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1600);
+      },
+      () => {},
+    );
   }
 
   return (
@@ -108,35 +117,33 @@ export function CelestialHud() {
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex w-full items-start gap-1 rounded-md py-0.5 pl-0.5 pr-0 text-left transition-[background-color,color] duration-150 ease-smooth-out",
+          "flex w-full items-center gap-1.5 rounded-md py-0.5 pl-0.5 pr-0 text-left transition-[background-color,color] duration-150 ease-smooth-out",
           open ? "text-foreground" : "hover:bg-surface-2/60",
         )}
       >
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-mono text-xs tabular-nums text-muted-foreground">
-            {now ? (
-              <>
-                {!isLive && (
-                  <span className="mr-1.5 text-foreground">
-                    {formatClockDate(now, timeZone)}
-                  </span>
-                )}
-                <span className="text-foreground">
-                  {formatClock(now, timeZone, isLive)}
-                </span>
-                <span className="ml-1.5">{formatZoneAbbrev(now, timeZone)}</span>
-              </>
-            ) : (
-              "—"
-            )}
-          </span>
-          {!open && (
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-              Click to adjust time
-              <span aria-hidden="true" className="text-foreground/70">
-                →
-              </span>
+        {!open && (
+          <span className="shrink-0 text-xs text-muted-foreground">
+            <span aria-hidden="true" className="mr-1 text-foreground/70">
+              →
             </span>
+            Click to adjust
+          </span>
+        )}
+        <span className="min-w-0 flex-1 truncate text-right font-mono text-xs tabular-nums text-muted-foreground">
+          {now ? (
+            <>
+              {!isLive && (
+                <span className="mr-1.5 text-foreground">
+                  {formatClockDate(now, timeZone)}
+                </span>
+              )}
+              <span className="text-foreground">
+                {formatClock(now, timeZone, true)}
+              </span>
+              <span className="ml-1.5">{formatZoneAbbrev(now, timeZone)}</span>
+            </>
+          ) : (
+            "—"
           )}
         </span>
         <span

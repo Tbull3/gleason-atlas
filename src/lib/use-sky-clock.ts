@@ -14,6 +14,6 @@ export function useSkyNow() {
   }, [clockMs]);
 
   const now = clockMs != null ? new Date(clockMs) : live;
-  const sky = useMemo(() => (now ? skyAt(now) : null), [now]);
+  const sky = useMemo(() => (now ? skyAt(now) : null), [now?.getTime()]);
   return { now, sky, isLive: clockMs == null };
 }

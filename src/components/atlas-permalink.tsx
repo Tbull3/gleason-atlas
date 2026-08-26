@@ -7,7 +7,6 @@ export function AtlasPermalink() {
   const metric = useAtlas((s) => s.metric);
   const viewMode = useAtlas((s) => s.viewMode);
   const selectedKey = useAtlas((s) => s.selectedKey);
-  const clockMs = useAtlas((s) => s.clockMs);
   const viewerPin = useAtlas((s) => s.viewerPin);
   const bodyScale = useAtlas((s) => s.bodyScale);
   const clockZone = useAtlas((s) => s.clockZone);
@@ -25,7 +24,7 @@ export function AtlasPermalink() {
     if (!hydrated.current) return;
     if (typeof window === "undefined") return;
     const hash = toShareHash({
-      t: clockMs,
+      t: null,
       v: viewMode,
       c: selectedKey,
       pin: viewerPin,
@@ -40,7 +39,6 @@ export function AtlasPermalink() {
     metric,
     viewMode,
     selectedKey,
-    clockMs,
     viewerPin,
     bodyScale,
     clockZone,

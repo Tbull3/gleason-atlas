@@ -34,6 +34,8 @@ export function CelestialHud() {
   const clockZone = useAtlas((s) => s.clockZone);
   const setClockZone = useAtlas((s) => s.setClockZone);
   const setClockMs = useAtlas((s) => s.setClockMs);
+  const clockRate = useAtlas((s) => s.clockRate);
+  const setClockRate = useAtlas((s) => s.setClockRate);
   const open = useAtlas((s) => s.clockOpen);
   const setOpen = useAtlas((s) => s.setClockOpen);
   const pin = useAtlas((s) => s.viewerPin);
@@ -126,7 +128,7 @@ export function CelestialHud() {
             <span aria-hidden="true" className="mr-1 text-foreground/70">
               →
             </span>
-            Click to adjust
+            {clockRate > 1 ? `${clockRate}×` : "Click to adjust"}
           </span>
         )}
         <span className="min-w-0 flex-1 truncate text-right font-mono text-xs tabular-nums text-muted-foreground">
@@ -138,7 +140,7 @@ export function CelestialHud() {
                 </span>
               )}
               <span className="text-foreground">
-                {formatClock(now, timeZone, true)}
+                {formatClock(now, timeZone, clockRate === 1)}
               </span>
               <span className="ml-1.5">{formatZoneAbbrev(now, timeZone)}</span>
             </>
@@ -164,7 +166,7 @@ export function CelestialHud() {
         >
           <div className="flex items-baseline justify-between gap-2">
             <p className="font-mono text-sm tabular-nums text-foreground">
-              {now ? formatClock(now, timeZone, isLive) : "—"}
+              {now ? formatClock(now, timeZone, clockRate === 1 && isLive) : "—"}
             </p>
             <p className="text-xs text-muted-foreground">
               {now ? (
@@ -232,8 +234,21 @@ export function CelestialHud() {
               <div className="flex flex-wrap gap-0.5">
                 <ZoneButton
                   label="Now"
-                  pressed={isLive}
-                  onClick={() => setClockMs(null)}
+                  pressed={isLive && clockRate === 1}
+                  onClick={() => {
+                    setClockRate(1);
+                    setClockMs(null);
+                  }}
+                />
+                <ZoneButton
+                  label="3×"
+                  pressed={clockRate === 3}
+                  onClick={() => setClockRate(3)}
+                />
+                <ZoneButton
+                  label="10×"
+                  pressed={clockRate === 10}
+                  onClick={() => setClockRate(10)}
                 />
                 {seasons.map((mark) => (
                   <ZoneButton
@@ -284,7 +299,7 @@ export function CelestialHud() {
               33 statute mi across · 3,000 statute mi up
             </p>
             <ZoneButton
-              label={bodyScale === 10 ? "10×" : "True"}
+              label={bodyScale === 10 ? "Readable" : "True"}
               pressed={bodyScale === 10}
               onClick={() => setBodyScale(bodyScale === 10 ? 1 : 10)}
             />

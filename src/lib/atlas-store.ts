@@ -19,6 +19,7 @@ type AtlasState = {
   clockZone: "local" | "central";
   clockOpen: boolean;
   clockMs: number | null;
+  clockRate: 1 | 3 | 10;
   viewerPin: { lat: number; lon: number; label: string } | null;
   placingPin: boolean;
   bodyScale: 1 | 10;
@@ -34,6 +35,7 @@ type AtlasState = {
   setClockZone: (clockZone: "local" | "central") => void;
   setClockOpen: (clockOpen: boolean | ((current: boolean) => boolean)) => void;
   setClockMs: (clockMs: number | null) => void;
+  setClockRate: (clockRate: 1 | 3 | 10) => void;
   setViewerPin: (
     pin: { lat: number; lon: number; label: string } | null,
   ) => void;
@@ -63,6 +65,7 @@ export const useAtlas = create<AtlasState>((set) => ({
   clockZone: "local",
   clockOpen: false,
   clockMs: null,
+  clockRate: 1,
   viewerPin: null,
   placingPin: false,
   bodyScale: 10,
@@ -104,6 +107,14 @@ export const useAtlas = create<AtlasState>((set) => ({
         typeof clockOpen === "function" ? clockOpen(s.clockOpen) : clockOpen,
     })),
   setClockMs: (clockMs) => set({ clockMs }),
+  setClockRate: (clockRate) =>
+    set((s) => ({
+      clockRate,
+      clockMs:
+        clockRate === 1
+          ? s.clockMs
+          : s.clockMs ?? Date.now(),
+    })),
   setViewerPin: (viewerPin) => set({ viewerPin, placingPin: false }),
   setPlacingPin: (placingPin) => set({ placingPin }),
   setBodyScale: (bodyScale) => set({ bodyScale }),

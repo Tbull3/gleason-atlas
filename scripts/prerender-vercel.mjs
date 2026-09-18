@@ -107,8 +107,8 @@ for (const [path, outfile] of [
 if (wrote > 0 && existsSync(join(staticDir, "index.html"))) {
   const loginDest = join(staticDir, "login/index.html");
   mkdirSync(dirname(loginDest), { recursive: true });
-  writeFileSync(loginDest, readFileSync(join(staticDir, "index.html")));
-  console.info("[prerender] /login → login/index.html (atlas)");
+  writeFileSync(loginDest, '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/"><title>Gleason Atlas</title><script>location.replace("/" + location.hash)</script></head><body><a href="/">Open Gleason Atlas</a></body></html>');
+  console.info("[prerender] /login → login/index.html (redirect)");
 }
 
 if (wrote === 0) {
@@ -147,6 +147,4 @@ if (!existsSync(join(distDir, "index.html"))) {
   process.exit(1);
 }
 console.info("[prerender] dist/index.html ready");
-// The Nitro handler may start PGLite in the background; don't let that
-// uncaught bootstrap error fail a successful prerender.
 process.exit(0);
